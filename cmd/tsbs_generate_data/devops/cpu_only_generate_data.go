@@ -3,8 +3,8 @@ package devops
 import (
 	"time"
 
-	"github.com/timescale/tsbs/cmd/tsbs_generate_data/common"
-	"github.com/timescale/tsbs/cmd/tsbs_generate_data/serialize"
+	"../common"
+	"../serialize"
 )
 
 // A CPUOnlySimulator generates data similar to telemetry from Telegraf for only CPU metrics.

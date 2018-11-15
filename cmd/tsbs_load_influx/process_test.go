@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/timescale/tsbs/load"
+	"../../load"
 )
 
 func emptyLog(_ string, _ ...interface{}) (int, error) {

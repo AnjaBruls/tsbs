@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/timescale/tsbs/load"
+	"../../load"
 )
 
 // Program option vars:

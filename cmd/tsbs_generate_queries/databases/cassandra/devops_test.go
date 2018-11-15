@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/timescale/tsbs/query"
+	"../../query"
 )
 
 func TestDevopsGetHostWhereWithHostnames(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/timescale/tsbs/cmd/tsbs_generate_data/serialize"
+	"../serialize"
 )
 
 const testDevopsHostCount = 100

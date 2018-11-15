@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
+	"../../load"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"github.com/timescale/tsbs/load"
 )
 
 const (

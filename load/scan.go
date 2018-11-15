@@ -2,6 +2,7 @@ package load
 
 import (
 	"bufio"
+	"fmt"
 	"reflect"
 )
 
@@ -120,7 +121,9 @@ func scanWithIndexer(channels []*duplexChannel, batchSize uint, limit uint64, br
 	// a limit (olimit), in order to slow down the scanner so it doesn't starve the workers
 	ocnt := 0
 	olimit := numChannels * cap(channels[0].toWorker) * 3
+	var c int
 	for {
+
 		if limit > 0 && itemsRead == limit {
 			break
 		}
@@ -137,9 +140,11 @@ func scanWithIndexer(channels []*duplexChannel, batchSize uint, limit uint64, br
 		}
 
 		item := decoder.Decode(br)
+
 		if item == nil {
 			break
 		}
+		c++
 
 		idx := indexer.GetIndex(item)
 		batches[idx].Append(item)
@@ -150,6 +155,7 @@ func scanWithIndexer(channels []*duplexChannel, batchSize uint, limit uint64, br
 			batches[idx] = factory.New()
 		}
 	}
+	fmt.Println(c)
 
 	// Finished reading input, make sure last batch goes out.
 	for idx, b := range batches {

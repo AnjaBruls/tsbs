@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/uses/devops"
-	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/utils"
-	"github.com/timescale/tsbs/query"
+	"../../cmd/tsbs_generate_queries/uses/devops"
+	"../../cmd/tsbs_generate_queries/utils"
+	"../../query"
 )
 
 // Devops produces Cassandra-specific queries for all the devops query types.

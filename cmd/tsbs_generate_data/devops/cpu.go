@@ -4,8 +4,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/timescale/tsbs/cmd/tsbs_generate_data/common"
-	"github.com/timescale/tsbs/cmd/tsbs_generate_data/serialize"
+	"../common"
+	"../serialize"
 )
 
 var (

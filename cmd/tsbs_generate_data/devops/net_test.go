@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/timescale/tsbs/cmd/tsbs_generate_data/serialize"
+	"../serialize"
 )
 
 func TestNetMeasurementTick(t *testing.T) {

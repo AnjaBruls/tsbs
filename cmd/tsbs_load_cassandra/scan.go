@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/timescale/tsbs/load"
+	"../../load"
 )
 
 type decoder struct {

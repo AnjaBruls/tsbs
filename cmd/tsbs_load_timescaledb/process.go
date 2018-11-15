@@ -9,7 +9,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	"github.com/timescale/tsbs/load"
+	"../../load"
 )
 
 const insertCSI = `INSERT INTO %s(time,tags_id,%s%s,additional_tags) VALUES %s`

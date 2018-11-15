@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/timescale/tsbs/query"
+	"../../query"
 )
 
 // HLQuery is a high-level query, usually read from stdin after being

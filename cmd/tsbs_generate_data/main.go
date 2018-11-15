@@ -26,9 +26,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/timescale/tsbs/cmd/tsbs_generate_data/common"
-	"github.com/timescale/tsbs/cmd/tsbs_generate_data/devops"
-	"github.com/timescale/tsbs/cmd/tsbs_generate_data/serialize"
+	"./common"
+	"./devops"
+	"./serialize"
 )
 
 const (
@@ -37,6 +37,7 @@ const (
 	formatInflux      = "influx"
 	formatMongo       = "mongo"
 	formatTimescaleDB = "timescaledb"
+	formatSiriDB      = "siridb"
 
 	// Use case choices (make sure to update TestGetConfig if adding a new one)
 	useCaseCPUOnly   = "cpu-only"
@@ -47,12 +48,12 @@ const (
 	errInvalidGroupsFmt = "incorrect interleaved groups configuration: id %d >= total groups %d"
 	errInvalidFormatFmt = "invalid format specifier: %v (valid choices: %v)"
 
-	defaultWriteSize  = 4 << 20 // 4 MB
+	defaultWriteSize = 4 << 20 // 4 MB
 )
 
 // semi-constants
 var (
-	formatChoices = []string{formatCassandra, formatInflux, formatMongo, formatTimescaleDB}
+	formatChoices = []string{formatCassandra, formatInflux, formatMongo, formatTimescaleDB, formatSiriDB}
 	// allows for testing
 	fatal = log.Fatalf
 )
@@ -277,6 +278,8 @@ func getSerializer(sim common.Simulator, format string, out *bufio.Writer) seria
 		return &serialize.InfluxSerializer{}
 	case formatMongo:
 		return &serialize.MongoSerializer{}
+	case formatSiriDB:
+		return &serialize.SiriDBSerializer{}
 	case formatTimescaleDB:
 		out.WriteString("tags")
 		for _, key := range devops.MachineTagKeys {

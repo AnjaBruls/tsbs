@@ -61,20 +61,20 @@ scripts). The easiest way to get and install the Go programs is to use
 ```bash
 # Fetch TSBS and its dependencies
 $ go get github.com/timescale/tsbs
-$ cd $GOPATH/src/github.com/timescale/tsbs/cmd
+$ cd $GOPATH/src/../../cmd
 $ go get ./...
 
 # Install desired binaries. At a minimum this includes tsbs_generate_data,
 # tsbs_generate_queries, one tsbs_load_* binary, and one tsbs_run_queries_*
 # binary:
-$ cd $GOPATH/src/github.com/timescale/tsbs/cmd
+$ cd $GOPATH/src/../../cmd
 $ cd tsbs_generate_data && go install
 $ cd ../tsbs_generate_queries && go install
 $ cd ../tsbs_load_timescaledb && go install
 $ cd ../tsbs_run_queries_timescaledb && go install
 
 # Optionally, install all binaries:
-$ cd $GOPATH/src/github.com/timescale/tsbs/cmd
+$ cd $GOPATH/src/../../cmd
 $ go install ./...
 ```
 
@@ -181,7 +181,7 @@ then use:
 ```bash
 # Will insert using 2 clients, batch sizes of 10k, from a file
 # named `timescaledb-data.gz` in directory `/tmp`
-$ NUM_WORKERS=2 BATCH_SIZE=10000 BULK_DATA_DIR=/tmp \       
+$ NUM_WORKERS=2 BATCH_SIZE=10000 BULK_DATA_DIR=/tmp \
     scripts/load_timescaledb.sh
 ```
 
@@ -231,7 +231,7 @@ just use the corresponding `tsbs_run_queries_` binary for the database
 being tested:
 ```bash
 $ cat /tmp/queries/timescaledb-cpu-max-all-eight-hosts-queries.gz | \
-    gunzip | tsbs_run_queries_timescaledb --workers=8 \    
+    gunzip | tsbs_run_queries_timescaledb --workers=8 \
         --postgres="host=localhost user=postgres sslmode=disable"
 ```
 

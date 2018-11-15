@@ -2,14 +2,15 @@ package load
 
 import (
 	"bufio"
+	"compress/gzip"
 	"flag"
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"sync"
 	"sync/atomic"
 	"time"
-	"log"
 )
 
 const (
@@ -28,7 +29,7 @@ const (
 // change for more useful testing
 var (
 	printFn = fmt.Printf
-	fatal = log.Fatalf
+	fatal   = log.Fatalf
 )
 
 // Benchmark is an interface that represents the skeleton of a program
@@ -79,13 +80,13 @@ func GetBenchmarkRunnerWithBatchSize(batchSize uint) *BenchmarkRunner {
 	flag.StringVar(&loader.dbName, "db-name", "benchmark", "Name of database")
 
 	flag.UintVar(&loader.batchSize, "batch-size", batchSize, "Number of items to batch together in a single insert")
-	flag.UintVar(&loader.workers, "workers", 1, "Number of parallel clients inserting")
+	flag.UintVar(&loader.workers, "workers", 2, "Number of parallel clients inserting")
 	flag.Uint64Var(&loader.limit, "limit", 0, "Number of items to insert (0 = all of them).")
 	flag.BoolVar(&loader.doLoad, "do-load", true, "Whether to write data. Set this flag to false to check input read speed.")
 	flag.BoolVar(&loader.doCreateDB, "do-create-db", true, "Whether to create the database. Disable on all but one client if running on a multi client setup.")
 	flag.BoolVar(&loader.doAbortOnExist, "do-abort-on-exist", false, "Whether to abort if a database with the given name already exists.")
 	flag.DurationVar(&loader.reportingPeriod, "reporting-period", 10*time.Second, "Period to report write stats")
-	flag.StringVar(&loader.fileName, "file", "", "File name to read data from")
+	flag.StringVar(&loader.fileName, "file", "../../../../../../tmp/siridb-data.gz", "File name to read data from")
 
 	return loader
 }
@@ -132,7 +133,9 @@ func (l *BenchmarkRunner) GetBufferedReader() *bufio.Reader {
 				fatal("cannot open file for read %s: %v", l.fileName, err)
 				return nil
 			}
-			l.br = bufio.NewReaderSize(file, defaultReadSize)
+			filegzip, err := gzip.NewReader(file) // !!!!!!!!!!!!!!!!!!!!
+			l.br = bufio.NewReaderSize(filegzip, defaultReadSize)
+
 		} else {
 			// Read from STDIN
 			l.br = bufio.NewReaderSize(os.Stdin, defaultReadSize)
@@ -169,6 +172,7 @@ func (l *BenchmarkRunner) useDBCreator(dbc DBCreator) func() {
 				}
 			}
 			err := dbc.CreateDB(l.dbName)
+
 			if err != nil {
 				panic(err)
 			}
@@ -203,6 +207,7 @@ func (l *BenchmarkRunner) scan(b Benchmark, channels []*duplexChannel) uint64 {
 	if l.reportingPeriod.Nanoseconds() > 0 {
 		go l.report(l.reportingPeriod)
 	}
+
 	return scanWithIndexer(channels, l.batchSize, l.limit, l.br, b.GetPointDecoder(l.br), b.GetBatchFactory(), b.GetPointIndexer(uint(len(channels))))
 }
 
