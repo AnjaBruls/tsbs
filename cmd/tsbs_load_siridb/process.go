@@ -16,14 +16,13 @@ type processor struct {
 
 func (p *processor) Init(numWorker int, doLoad bool) {
 	hostlist := [][]interface{}{}
-	fmt.Println(doLoad)
 	if doLoad {
-		listhosts := strings.Split(hosts, ",")
+		listhostports := strings.Split(hosts, ",")
 
-		for _, host := range listhosts {
-			hostport := strings.Split(host, ":")
-			host := hostport[0]
-			port, err := strconv.ParseInt(hostport[1], 10, 0)
+		for _, hostport := range listhostports {
+			host_port := strings.Split(hostport, ":")
+			host := host_port[0]
+			port, err := strconv.ParseInt(host_port[1], 10, 0)
 			if err != nil {
 				fatal(err)
 			}

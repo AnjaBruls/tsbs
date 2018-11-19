@@ -81,12 +81,11 @@ func (d *decoder) Decode(_ *bufio.Reader) *load.Point {
 		key := splitfield[0]
 		value := strings.Split(splitfield[1], ":")
 
-		valueConverted, err := typeConversion(value[1], value[0])
-		if err != nil {
-			fatal(err)
-		}
-		fmt.Println(key)
-		fieldkeys, fieldvalues = append(fieldkeys, key), append(fieldvalues, valueConverted)
+		// valueConverted, err := typeConversion(value[1], value[0])
+		// if err != nil {
+		// 	fatal(err)
+		// }
+		fieldkeys, fieldvalues = append(fieldkeys, key), append(fieldvalues, value[0])
 	}
 
 	ts, err := strconv.ParseInt(data.timestamp, 10, 64)

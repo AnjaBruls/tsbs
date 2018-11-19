@@ -110,7 +110,7 @@ func (l *BenchmarkRunner) RunBenchmark(b Benchmark, workQueues uint) {
 		wg.Add(1)
 		go l.work(b, &wg, channels[i%len(channels)], i)
 	}
-
+	fmt.Println("start")
 	start := time.Now()
 	l.scan(b, channels)
 
@@ -133,7 +133,7 @@ func (l *BenchmarkRunner) GetBufferedReader() *bufio.Reader {
 				fatal("cannot open file for read %s: %v", l.fileName, err)
 				return nil
 			}
-			filegzip, err := gzip.NewReader(file) // !!!!!!!!!!!!!!!!!!!!
+			filegzip, err := gzip.NewReader(file) // anja
 			l.br = bufio.NewReaderSize(filegzip, defaultReadSize)
 
 		} else {
@@ -207,7 +207,6 @@ func (l *BenchmarkRunner) scan(b Benchmark, channels []*duplexChannel) uint64 {
 	if l.reportingPeriod.Nanoseconds() > 0 {
 		go l.report(l.reportingPeriod)
 	}
-
 	return scanWithIndexer(channels, l.batchSize, l.limit, l.br, b.GetPointDecoder(l.br), b.GetBatchFactory(), b.GetPointIndexer(uint(len(channels))))
 }
 

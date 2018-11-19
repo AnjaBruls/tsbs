@@ -30,7 +30,7 @@ while ! pg_isready -h ${DATABASE_HOST}; do
 done
 
 cat ${DATA_FILE} | gunzip | $EXE_FILE_NAME \
-                                --postgres="sslmode=disable" \
+                                --postgres="host=postgres user=postgres password=JFWB" \
                                 --db-name=${DATABASE_NAME} \
                                 --host=${DATABASE_HOST} \
                                 --user=${DATABASE_USER} \

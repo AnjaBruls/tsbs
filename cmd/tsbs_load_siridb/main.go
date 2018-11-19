@@ -27,6 +27,8 @@ var (
 	dbPass            string
 	logBatches        bool
 	dbpaths           string
+	createNewPool     bool
+	createReplica     bool
 )
 
 // Global vars
@@ -44,6 +46,8 @@ func init() {
 	flag.StringVar(&dbUser, "dbuser", "iris", "Username to enter SiriDB")
 	flag.StringVar(&dbPass, "dbpass", "siri", "Password to enter SiriDB")
 	flag.StringVar(&dbpaths, "dbpaths", "../../../siridb-server/dbtest/dbpath0,../../../siridb-server/dbtest/dbpath1", "Database paths")
+	flag.BoolVar(&createNewPool, "pool", true, "Whether to create a new pool.")
+	flag.BoolVar(&createReplica, "replica", false, "Whether to create a replica.")
 
 	flag.StringVar(&hosts, "hosts", "localhost:9000,localhost:9001", "Comma separated list of Cassandra hosts in a cluster.")
 
@@ -53,7 +57,6 @@ func init() {
 	flag.IntVar(&writeTimeout, "write-timeout", 10, "Write timeout.")
 
 	flag.Parse()
-
 }
 
 type benchmark struct{}
