@@ -62,7 +62,7 @@ func init() {
 type benchmark struct{}
 
 func (b *benchmark) GetPointDecoder(br *bufio.Reader) load.PointDecoder {
-	return &decoder{scanner: bufio.NewScanner(br)}
+	return &decoder{}
 }
 
 func (b *benchmark) GetBatchFactory() load.BatchFactory {
@@ -82,6 +82,5 @@ func (b *benchmark) GetDBCreator() load.DBCreator {
 }
 
 func main() {
-
 	loader.RunBenchmark(&benchmark{}, load.SingleQueue)
 }

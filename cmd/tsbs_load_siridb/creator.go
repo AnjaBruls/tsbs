@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
-	"github.com/SiriDB/go-siridb-connector"
+	"../../../go-siridb-connector"
 )
 
 type dbCreator struct {
@@ -42,12 +41,13 @@ func (d *dbCreator) DBExists(dbName string) bool {
 
 func (d *dbCreator) RemoveOldDB(dbName string) error {
 
-	paths := strings.Split(dbpaths, ",")
-	for _, dbpath := range paths {
-		if err := os.RemoveAll(fmt.Sprintf("%s/%s", dbpath, dbName)); err != nil {
-			return err
-		}
-	}
+	// paths := strings.Split(dbpaths, ",")
+	// for _, dbpath := range paths {
+	// if err := os.RemoveAll(fmt.Sprintf("%s/%s", dbpath, dbName)); err != nil {
+	// 	return err
+	// }
+	// }
+	fatal("Cannot remove database")
 	return nil
 }
 

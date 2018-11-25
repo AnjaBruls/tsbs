@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"../../../go-siridb-connector"
 	"../../load"
-	siridb "github.com/SiriDB/go-siridb-connector"
 )
 
 type processor struct {
@@ -53,7 +53,8 @@ func (p *processor) ProcessBatch(b load.Batch, doLoad bool) (metricCount, rows u
 	if p.client.IsConnected() {
 		if doLoad {
 			start := time.Now()
-			if _, err := p.client.Insert(batch.serie, uint16(writeTimeout)); err != nil {
+			// fmt.Println(len(serie))
+			if _, err := p.client.InsertBin(batch.series, uint16(writeTimeout)); err != nil {
 				fatal(err)
 			}
 			if logBatches {
@@ -67,7 +68,7 @@ func (p *processor) ProcessBatch(b load.Batch, doLoad bool) (metricCount, rows u
 		fatal("not even a single server is connected...hoi")
 	}
 	metricCount = uint64(batch.cnt)
-	batch.serie = map[string][][]interface{}{}
+	batch.series = make([]byte, 0, 10000)
 	batch.cnt = 0
 	return metricCount, 0
 }
