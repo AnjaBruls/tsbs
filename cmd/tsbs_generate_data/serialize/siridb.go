@@ -89,7 +89,7 @@ func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
 		dataSlice = append(lenSlice, dataSlice...)
 		dataSlice = append(lenData, dataSlice...)
 
-		// schrijf per metric
+		// schrijf per metriccd.
 
 		// fmt.Fprintf(os.Stderr, "%s\n", data) // int64????
 
