@@ -15,7 +15,7 @@ import (
 
 const (
 	// DefaultBatchSize is the default size of batches to be inserted
-	defaultBatchSize = 10000
+	defaultBatchSize = 1000
 	defaultReadSize  = 4 << 20 // 4 MB
 
 	// WorkerPerQueue is the value to have each worker have its own queue of batches
@@ -110,7 +110,6 @@ func (l *BenchmarkRunner) RunBenchmark(b Benchmark, workQueues uint) {
 		wg.Add(1)
 		go l.work(b, &wg, channels[i%len(channels)], i)
 	}
-	fmt.Println("start")
 	start := time.Now()
 	l.scan(b, channels)
 

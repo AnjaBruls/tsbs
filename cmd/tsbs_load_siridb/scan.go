@@ -9,8 +9,12 @@ import (
 	"../../load"
 )
 
+// HeaderSize if the size of a package header.
+const HeaderSize = 6
+
 type point struct {
-	data []byte
+	data      []byte
+	metricCnt uint16
 }
 
 type batch struct {
@@ -25,111 +29,64 @@ func (b *batch) Len() int {
 func (b *batch) Append(item *load.Point) {
 	that := item.Data.(*point)
 	b.series = append(b.series, that.data...)
-	b.cnt++
-	// fmt.Println(b.cnt)
+	b.cnt += int(that.metricCnt)
 }
 
 type factory struct{}
 
 func (f *factory) New() load.Batch {
+	serie := make([]byte, 0)
+	serie = append([]byte{byte(253)}, serie...)
 	return &batch{
-		series: make([]byte, 0, 10000),
+		series: serie,
 		cnt:    0,
 	}
 }
 
 type decoder struct {
+	buf []byte
+	len uint32
 }
 
-const tagsPrefix = "tags"
+func (d *decoder) Read(bf *bufio.Reader) int {
+	buf := make([]byte, 8192)
+	n, err := bf.Read(buf)
+	if err == io.EOF {
+		return n
+	}
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	d.len += uint32(n)
+	d.buf = append(d.buf, buf[:n]...)
+	return n
+}
 
 func (d *decoder) Decode(bf *bufio.Reader) *load.Point {
-	var err error
-	var n int
-	lenData := make([]byte, 4)
-	_, err = bf.Read(lenData)
-	if err == io.EOF {
-		return nil
-	}
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	lenSlice := make([]byte, 4)
-	_, err = bf.Read(lenSlice)
-	if err == io.EOF {
-		return nil
-	}
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	lengthData := binary.LittleEndian.Uint32(lenData)
-	lengthSlice := binary.LittleEndian.Uint32(lenSlice)
-	data := make([]byte, lengthSlice)
-	n, err = bf.Read(data)
-	// fmt.Println(data)
-	if err == io.EOF {
-		return nil
-	}
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	if uint32(n) < lengthSlice {
-		var p int
-		for uint32(n) < lengthSlice {
-			part := make([]byte, lengthSlice-uint32(n))
-			p, err = bf.Read(part)
-
-			data = append(data[:n], part...)
-
-			if lengthData > 8192 || lengthSlice > 8192 {
-				log.Fatal("length too long")
-			}
-
-			if err == io.EOF {
-				return nil
-			}
-			if err != nil {
-				log.Fatal(err.Error())
-			}
-			n += p
+	if d.len < HeaderSize {
+		if n := d.Read(bf); n == 0 {
+			return nil
 		}
-
 	}
+
+	lengthData := binary.LittleEndian.Uint32(d.buf[:4])
+	metricCnt := binary.LittleEndian.Uint16(d.buf[4:6])
+
+	total := lengthData + HeaderSize
+	for d.len < total {
+		if n := d.Read(bf); n == 0 {
+			return nil
+		}
+	}
+
+	data := d.buf[HeaderSize:total]
+
+	d.buf = d.buf[total:]
+	d.len -= total
+
 	return load.NewPoint(&point{
-		data: data[:lengthData],
+		data:      data,
+		metricCnt: metricCnt,
 	})
 }
-
-// func (d *decoder) Decode(r *bufio.Reader) *load.Point {
-// 	l := make([]byte, 4)
-// 	n, err := r.Read(l)
-// 	if n != 4 {
-// 		log.Fatal("Reads more than 4 bytes")
-// 	}
-// 	if err == io.EOF {
-// 		return nil
-// 	}
-// 	if err != nil {
-// 		log.Fatal(err.Error())
-// 	}
-
-// 	length := binary.LittleEndian.Uint32(l)
-// 	data := make([]byte, length)
-// 	n, err = r.Read(data)
-// 	if uint32(n) != length {
-// 		fmt.Println(n, length, data)
-
-// 		// log.Fatal("Reads more than expected")
-// 	}
-// 	if err == io.EOF {
-// 		return nil
-// 	}
-// 	if err != nil {
-// 		log.Fatal(err.Error())
-// 	}
-// 	fmt.Println(length)
-// 	return load.NewPoint(&point{
-// 		data: data,
-// 	})
-// }

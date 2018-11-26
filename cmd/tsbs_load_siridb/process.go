@@ -53,7 +53,6 @@ func (p *processor) ProcessBatch(b load.Batch, doLoad bool) (metricCount, rows u
 	if p.client.IsConnected() {
 		if doLoad {
 			start := time.Now()
-			// fmt.Println(len(serie))
 			if _, err := p.client.InsertBin(batch.series, uint16(writeTimeout)); err != nil {
 				fatal(err)
 			}
@@ -68,7 +67,9 @@ func (p *processor) ProcessBatch(b load.Batch, doLoad bool) (metricCount, rows u
 		fatal("not even a single server is connected...hoi")
 	}
 	metricCount = uint64(batch.cnt)
-	batch.series = make([]byte, 0, 10000)
+	serie := make([]byte, 0)
+	serie = append([]byte{byte(253)}, serie...)
+	batch.series = serie
 	batch.cnt = 0
 	return metricCount, 0
 }

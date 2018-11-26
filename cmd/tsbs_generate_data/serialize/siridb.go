@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strconv"
 
 	"github.com/transceptor-technology/go-qpack"
@@ -48,66 +49,43 @@ func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
 	}
 
 	fieldvalue := make([]interface{}, 0, 256)
+	metricCount := 0
 	for _, v := range p.fieldValues {
 		fieldvalue = append(fieldvalue, v)
+		metricCount++
 	}
 
-	// var serie = make(map[string][]interface{})
-	var err error
-	var data []byte
-
+	var line = make([]byte, 0)
 	for i, _ := range fieldvalue {
-		var serie = make(map[string][][]interface{})
+
 		ts, _ := strconv.ParseInt(fmt.Sprintf("%d", p.timestamp.UTC().UnixNano()), 10, 64)
+
 		keyString := nameString + "   Field: " + fieldkey[i]
 		value := fieldvalue[i]
-		serie[keyString] = append(serie[keyString], []interface{}{ts, value})
-		// serie[keyString] = [][]interface{}{ts, value}
-		data, err = qpack.Pack(serie)
+		key, err := qpack.Pack(keyString)
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		length := uint32(len(data)) + uint32(8)
-		var lengthSlice uint32
-		if length < 1024 {
-			lengthSlice = 1024
-		} else if length < 2048 {
-			lengthSlice = 2048
-		} else if length < 4096 {
-			lengthSlice = 4096
-		} else if length < 8192 {
-			lengthSlice = 8192
+		data, err := qpack.Pack([][]interface{}{{ts, value}})
+		if err != nil {
+			log.Fatal(err)
 		}
-		lenData := make([]byte, 4)
-		binary.LittleEndian.PutUint32(lenData, uint32(len(data)))
-		lenSlice := make([]byte, 4)
-		binary.LittleEndian.PutUint32(lenSlice, uint32(lengthSlice-8))
-
-		dataSlice := make([]byte, lengthSlice-length, lengthSlice)
-		dataSlice = append(data, dataSlice...)
-		dataSlice = append(lenSlice, dataSlice...)
-		dataSlice = append(lenData, dataSlice...)
-
-		// schrijf per metriccd.
-
-		// fmt.Fprintf(os.Stderr, "%s\n", data) // int64????
-
-		// _, err = w.Write(l)
-		_, err = w.Write(dataSlice)
+		line = append(line, key...)
+		line = append(line, data...)
 	}
+
+	lenData := make([]byte, 4)
+	binary.LittleEndian.PutUint32(lenData, uint32(len(line)))
+
+	lenMetrics := make([]byte, 2)
+	binary.LittleEndian.PutUint16(lenMetrics, uint16(metricCount))
+
+	line = append(lenMetrics, line...)
+	line = append(lenData, line...)
+
+	fmt.Fprintf(os.Stderr, "%v\n", len(line)) // int64????
+
+	_, err := w.Write(line)
 
 	return err
 }
-
-// 	l := make([]byte, 4)
-// 	binary.LittleEndian.PutUint32(l, uint32(len(data)))
-// 	data = append(l, data...)
-
-// 	// fmt.Fprintf(os.Stderr, "%v, %v\n", len(data), data) // int64????
-
-// 	// _, err = w.Write(l)
-// 	_, err = w.Write(data)
-
-// 	return err
-// }
