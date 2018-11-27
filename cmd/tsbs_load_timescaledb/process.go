@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"../../load"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	"../../load"
 )
 
 const insertCSI = `INSERT INTO %s(time,tags_id,%s%s,additional_tags) VALUES %s`
@@ -222,11 +222,12 @@ func (p *processor) Close(doLoad bool) {
 }
 
 func (p *processor) ProcessBatch(b load.Batch, doLoad bool) (uint64, uint64) {
+
 	batches := b.(*hypertableArr)
 	rowCnt := 0
 	metricCnt := uint64(0)
+
 	for hypertable, rows := range batches.m {
-		rowCnt += len(rows)
 		if doLoad {
 			start := time.Now()
 			metricCnt += p.processCSI(hypertable, rows)

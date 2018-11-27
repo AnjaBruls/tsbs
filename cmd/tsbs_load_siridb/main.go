@@ -45,11 +45,17 @@ func init() {
 	flag.StringVar(&datapath, "datapath", "../../../../../tmp/siridb-data.gz", "Path to the zipped file in SiriDB format ")
 	flag.StringVar(&dbUser, "dbuser", "iris", "Username to enter SiriDB")
 	flag.StringVar(&dbPass, "dbpass", "siri", "Password to enter SiriDB")
-	flag.StringVar(&dbpaths, "dbpaths", "../../../siridb-server/dbtest/dbpath0,../../../siridb-server/dbtest/dbpath1", "Database paths")
-	flag.BoolVar(&createNewPool, "pool", true, "Whether to create a new pool.")
+
+	flag.StringVar(&dbpaths, "dbpaths", "../../../siridb-server/dbtest/dbpath0", "Database paths")
+	// flag.StringVar(&dbpaths, "dbpaths", "../../../siridb-server/dbtest/dbpath0,../../../siridb-server/dbtest/dbpath1", "Database paths")
+
+	flag.BoolVar(&createNewPool, "pool", false, "Whether to create a new pool.")
+	// flag.BoolVar(&createNewPool, "pool", true, "Whether to create a new pool.")
+
 	flag.BoolVar(&createReplica, "replica", false, "Whether to create a replica.")
 
-	flag.StringVar(&hosts, "hosts", "localhost:9000,localhost:9001", "Comma separated list of Cassandra hosts in a cluster.")
+	flag.StringVar(&hosts, "hosts", "localhost:9000", "Comma separated list of Cassandra hosts in a cluster.")
+	// flag.StringVar(&hosts, "hosts", "localhost:9000,localhost:9001", "Comma separated list of Cassandra hosts in a cluster.")
 
 	flag.BoolVar(&logBatches, "log-batches", false, "Whether to time individual batches.")
 
@@ -133,11 +139,17 @@ func main() {
 // 	flag.StringVar(&datapath, "datapath", "../../../../../tmp/siridb-data.gz", "Path to the zipped file in SiriDB format ")
 // 	flag.StringVar(&dbUser, "dbuser", "iris", "Username to enter SiriDB")
 // 	flag.StringVar(&dbPass, "dbpass", "siri", "Password to enter SiriDB")
-// 	flag.StringVar(&dbpaths, "dbpaths", "../../../siridb-server/dbtest/dbpath0,../../../siridb-server/dbtest/dbpath1", "Database paths")
-// 	flag.BoolVar(&createNewPool, "pool", true, "Whether to create a new pool.")
+
+// 	flag.StringVar(&dbpaths, "dbpaths", "../../../siridb-server/dbtest/dbpath0", "Database paths")
+// 	// flag.StringVar(&dbpaths, "dbpaths", "../../../siridb-server/dbtest/dbpath0,../../../siridb-server/dbtest/dbpath1", "Database paths")
+
+// 	flag.BoolVar(&createNewPool, "pool", false, "Whether to create a new pool.")
+// 	// flag.BoolVar(&createNewPool, "pool", true, "Whether to create a new pool.")
+
 // 	flag.BoolVar(&createReplica, "replica", false, "Whether to create a replica.")
 
-// 	flag.StringVar(&hosts, "hosts", "localhost:9000,localhost:9001", "Comma separated list of Cassandra hosts in a cluster.")
+// 	flag.StringVar(&hosts, "hosts", "localhost:9000", "Comma separated list of Cassandra hosts in a cluster.")
+// 	// flag.StringVar(&hosts, "hosts", "localhost:9000,localhost:9001", "Comma separated list of Cassandra hosts in a cluster.")
 
 // 	flag.BoolVar(&logBatches, "log-batches", false, "Whether to time individual batches.")
 

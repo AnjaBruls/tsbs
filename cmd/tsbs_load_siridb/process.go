@@ -59,16 +59,17 @@ func (p *processor) ProcessBatch(b load.Batch, doLoad bool) (metricCount, rows u
 			if logBatches {
 				now := time.Now()
 				took := now.Sub(start)
-				batchSize := batch.cnt
+				batchSize := batch.batchCnt
 				fmt.Printf("BATCH: batchsize %d insert rate %f/sec (took %v)\n", batchSize, float64(batchSize)/float64(took.Seconds()), took)
 			}
 		}
 	} else {
 		fatal("not even a single server is connected...hoi")
 	}
-	metricCount = uint64(batch.cnt)
+	metricCount = uint64(batch.metricCnt)
 	batch.serie = map[string][][]interface{}{}
-	batch.cnt = 0
+	batch.batchCnt = 0
+	batch.metricCnt = 0
 	return metricCount, 0
 }
 
@@ -133,17 +134,18 @@ func (p *processor) ProcessBatch(b load.Batch, doLoad bool) (metricCount, rows u
 // 			if logBatches {
 // 				now := time.Now()
 // 				took := now.Sub(start)
-// 				batchSize := batch.cnt
+// 				batchSize := batch.batchCnt
 // 				fmt.Printf("BATCH: batchsize %d insert rate %f/sec (took %v)\n", batchSize, float64(batchSize)/float64(took.Seconds()), took)
 // 			}
 // 		}
 // 	} else {
 // 		fatal("not even a single server is connected...hoi")
 // 	}
-// 	metricCount = uint64(batch.cnt)
+// 	metricCount = uint64(batch.metricCnt)
 // 	serie := make([]byte, 0)
 // 	serie = append([]byte{byte(253)}, serie...)
 // 	batch.series = serie
-// 	batch.cnt = 0
+// 	batch.batchCnt = 0
+// 	batch.metricCnt = 0
 // 	return metricCount, 0
 // }

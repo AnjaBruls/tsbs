@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -101,7 +100,6 @@ func (d *dbCreator) CreateDB(dbName string) error {
 // }
 
 func (d *dbCreator) Close() {
-	fmt.Println("close")
 	for _, conn := range d.connection {
 		conn.Close()
 	}
