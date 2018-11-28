@@ -15,7 +15,7 @@ import (
 
 const (
 	// DefaultBatchSize is the default size of batches to be inserted
-	defaultBatchSize = 1
+	defaultBatchSize = 10000
 	defaultReadSize  = 4 << 20 // 4 MB
 
 	// WorkerPerQueue is the value to have each worker have its own queue of batches
@@ -82,11 +82,11 @@ func GetBenchmarkRunnerWithBatchSize(batchSize uint) *BenchmarkRunner {
 	flag.UintVar(&loader.batchSize, "batch-size", batchSize, "Number of items to batch together in a single insert")
 	flag.UintVar(&loader.workers, "workers", 1, "Number of parallel clients inserting")
 	flag.Uint64Var(&loader.limit, "limit", 0, "Number of items to insert (0 = all of them).")
-	flag.BoolVar(&loader.doLoad, "do-load", true, "Whether to write data. Set this flag to false to check input read speed.")
+	flag.BoolVar(&loader.doLoad, "do-load", false, "Whether to write data. Set this flag to false to check input read speed.")
 	flag.BoolVar(&loader.doCreateDB, "do-create-db", true, "Whether to create the database. Disable on all but one client if running on a multi client setup.")
 	flag.BoolVar(&loader.doAbortOnExist, "do-abort-on-exist", false, "Whether to abort if a database with the given name already exists.")
 	flag.DurationVar(&loader.reportingPeriod, "reporting-period", 10*time.Second, "Period to report write stats")
-	flag.StringVar(&loader.fileName, "file", "../../../../../../tmp/timescaledb-data.gz", "File name to read data from")
+	flag.StringVar(&loader.fileName, "file", "../../../../../../tmp/siridbbyte-data.gz", "File name to read data from")
 
 	return loader
 }
@@ -149,7 +149,6 @@ func (l *BenchmarkRunner) GetBufferedReader() *bufio.Reader {
 func (l *BenchmarkRunner) useDBCreator(dbc DBCreator) func() {
 	// empty function to 'defer' from caller
 	fn := func() {}
-
 	if l.doLoad {
 		// DBCreator should still be Init'd even if -do-create-db is false since
 		// it can initialize the connecting session
