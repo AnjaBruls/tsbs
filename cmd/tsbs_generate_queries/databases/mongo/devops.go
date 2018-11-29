@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"../../../../query"
+	"../../uses/devops"
+	"../../utils"
 	"github.com/globalsign/mgo/bson"
-	"../../cmd/tsbs_generate_queries/uses/devops"
-	"../../cmd/tsbs_generate_queries/utils"
-	"../../query"
 )
 
 func init() {

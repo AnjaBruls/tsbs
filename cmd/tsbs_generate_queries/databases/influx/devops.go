@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"../../cmd/tsbs_generate_queries/uses/devops"
-	"../../query"
+	"../../../../query"
+	"../../uses/devops"
 )
 
 // Devops produces Influx-specific queries for all the devops query types.

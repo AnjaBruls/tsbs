@@ -114,7 +114,7 @@ const (
 // Program option vars:
 var (
 	hosts             string
-	replicationFactor int
+	replicationFactor int //???????????????????????
 	writeTimeout      int
 	datapath          string
 	dbUser            string
@@ -148,8 +148,8 @@ func init() {
 
 	flag.BoolVar(&createReplica, "replica", false, "Whether to create a replica.")
 
-	flag.StringVar(&hosts, "hosts", "localhost:9000", "Comma separated list of Cassandra hosts in a cluster.")
-	// flag.StringVar(&hosts, "hosts", "localhost:9000,localhost:9001", "Comma separated list of Cassandra hosts in a cluster.")
+	flag.StringVar(&hosts, "hosts", "localhost:9000", "Comma separated list of SiriDB hosts in a cluster.")
+	// flag.StringVar(&hosts, "hosts", "localhost:9000,localhost:9001", "Comma separated list of SiriDB hosts in a cluster.")
 
 	flag.BoolVar(&logBatches, "log-batches", false, "Whether to time individual batches.")
 

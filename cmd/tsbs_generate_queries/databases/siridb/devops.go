@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"../../cmd/tsbs_generate_queries/uses/devops"
-	"../../query"
+	"../../../../query"
+	"../../uses/devops"
 )
 
 // Devops produces TimescaleDB-specific queries for all the devops query types.
@@ -16,48 +16,26 @@ type Devops struct {
 
 // NewDevops makes an Devops object ready to generate Queries.
 func NewDevops(start, end time.Time, scale int) *Devops {
-	return &Devops{devops.NewCore(start, end, scale), false, false}
+	return &Devops{devops.NewCore(start, end, scale)}
 }
 
 // GenerateEmptyQuery returns an empty query.TimescaleDB
 func (d *Devops) GenerateEmptyQuery() query.Query {
-	return query.NewTimescaleDB()
+	return query.NewSiriDB()
 }
 
 func (d *Devops) getHostWhereWithHostnames(hostnames []string) string {
 	hostnameClauses := []string{}
-	if d.UseJSON {
-		for _, s := range hostnames {
-			hostnameClauses = append(hostnameClauses, fmt.Sprintf("tagset @> '{\"hostname\": \"%s\"}'", s))
-		}
-		return fmt.Sprintf("tags_id IN (SELECT id FROM tags WHERE %s)", strings.Join(hostnameClauses, " OR "))
-	} else if d.UseTags {
-		for _, s := range hostnames {
-			hostnameClauses = append(hostnameClauses, fmt.Sprintf("'%s'", s))
-		}
-		return fmt.Sprintf("tags_id IN (SELECT id FROM tags WHERE hostname IN (%s))", strings.Join(hostnameClauses, ","))
-	} else {
-		for _, s := range hostnames {
-			hostnameClauses = append(hostnameClauses, fmt.Sprintf("hostname = '%s'", s))
-		}
-		combinedHostnameClause := strings.Join(hostnameClauses, " OR ")
-
-		return "(" + combinedHostnameClause + ")"
+	for i, s := range hostnames {
+		hostnameClauses = append(hostnameClauses, fmt.Sprintf("/.*hostname=%s.*/", s))
 	}
+	combinedHostnameClause := strings.Join(hostnameClauses, ", ")
+	return combinedHostnameClause
 }
 
 func (d *Devops) getHostWhereString(nhosts int) string {
 	hostnames := d.GetRandomHosts(nhosts)
 	return d.getHostWhereWithHostnames(hostnames)
-}
-
-func (d *Devops) getSelectClausesAggMetrics(agg string, metrics []string) []string {
-	selectClauses := make([]string, len(metrics))
-	for i, m := range metrics {
-		selectClauses[i] = fmt.Sprintf("%[1]s(%[2]s) as %[1]s_%[2]s", agg, m)
-	}
-
-	return selectClauses
 }
 
 const goTimeFmt = "2006-01-02 15:04:05.999999 -0700"
@@ -73,23 +51,17 @@ const goTimeFmt = "2006-01-02 15:04:05.999999 -0700"
 // GROUP BY minute ORDER BY minute ASC
 func (d *Devops) GroupByTime(qi query.Query, nHosts, numMetrics int, timeRange time.Duration) {
 	interval := d.Interval.RandWindow(timeRange)
-	metrics := devops.GetCPUMetricsSlice(numMetrics)
-	selectClauses := d.getSelectClausesAggMetrics("max", metrics)
+	whereHosts := d.getHostWhereString(nHosts)
 
-	sql := fmt.Sprintf(`SELECT time_bucket('1 minute', time) AS minute,
-    %s
-    FROM cpu
-    WHERE %s AND time >= '%s' AND time < '%s'
-    GROUP BY minute ORDER BY minute ASC`,
-		strings.Join(selectClauses, ", "),
-		d.getHostWhereString(nHosts),
-		interval.Start.Format(goTimeFmt),
-		interval.End.Format(goTimeFmt))
-
-	humanLabel := fmt.Sprintf("TimescaleDB %d cpu metric(s), random %4d hosts, random %s by 1m", numMetrics, nHosts, timeRange)
+	humanLabel := fmt.Sprintf("SiriDB %d cpu metric(s), random %4d hosts, random %s by 1m", numMetrics, nHosts, timeRange)
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.StartString())
-	d.fillInQuery(qi, humanLabel, humanDesc, sql)
+	influxql := fmt.Sprintf("select max(1m) from %s & /.*Measurement name: cpu .*/ between '%s'  and '%s' ", whereHosts, interval.StartString(), interval.EndString())
+	d.fillInQuery(qi, humanLabel, humanDesc, influxql)
 }
+
+// [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
+// select  max(5m) from /.*usage_user.*/ before '2016-01-01T12:00:00Z'
+// [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 // GroupByOrderByLimit populates a query.Query that has a time WHERE clause, that groups by a truncated date, orders by that date, and takes a limit:
 // SELECT time_bucket('1 minute', time) AS t, MAX(cpu) FROM cpu
