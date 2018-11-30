@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"time"
 
-	"../../cmd/tsbs_generate_queries/utils"
-	"../../query"
+	"../../../../query"
+	"../../utils"
 )
 
 const (

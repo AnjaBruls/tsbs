@@ -37,6 +37,7 @@ func (qs *scanner) scan(pool *sync.Pool, c chan Query) {
 
 		q := pool.Get().(Query)
 		err := dec.Decode(q)
+
 		if err == io.EOF {
 			break
 		}

@@ -1,8 +1,8 @@
 package devops
 
 import (
-	"../../cmd/tsbs_generate_queries/utils"
-	"../../query"
+	"../../../../query"
+	"../../utils"
 )
 
 // LastPointPerHost returns QueryFiller for the devops lastpoint case

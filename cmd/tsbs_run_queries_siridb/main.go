@@ -42,6 +42,10 @@ var (
 	runner *query.BenchmarkRunner
 )
 
+var (
+	siridb_connector *siridb.Client
+)
+
 // Parse args:
 func init() {
 	runner = query.NewBenchmarkRunner()
@@ -59,26 +63,7 @@ func init() {
 	}
 
 	flag.Parse()
-}
 
-func main() {
-	runner.Run(&query.TimescaleDBPool, newProcessor)
-}
-
-type queryExecutorOptions struct {
-	showExplain   bool
-	debug         bool
-	printResponse bool
-}
-
-type processor struct {
-	client *siridb.Client
-	opts   *queryExecutorOptions
-}
-
-func newProcessor() query.Processor { return &processor{} }
-
-func (p *processor) Init(numWorker int, doLoad bool) {
 	hostlist := [][]interface{}{}
 	listhostports := strings.Split(hosts, ",")
 
@@ -92,15 +77,35 @@ func (p *processor) Init(numWorker int, doLoad bool) {
 		hostlist = append(hostlist, []interface{}{host, int(port)})
 	}
 
-	p.client = siridb.NewClient(
+	siridb_connector = siridb.NewClient(
 		dbUser,                // username
 		dbPass,                // password
 		runner.DatabaseName(), // database
 		hostlist,              // siridb server(s)
 		nil,                   // optional log channel
 	)
-	p.client.Connect()
+}
 
+func main() {
+
+	runner.Run(&query.SiriDBPool, newProcessor)
+	siridb_connector.Close()
+}
+
+type queryExecutorOptions struct {
+	showExplain   bool
+	debug         bool
+	printResponse bool
+}
+
+type processor struct {
+	opts *queryExecutorOptions
+}
+
+func newProcessor() query.Processor { return &processor{} }
+
+func (p *processor) Init(numWorker int) {
+	siridb_connector.Connect()
 	p.opts = &queryExecutorOptions{
 		showExplain:   showExplain,
 		debug:         runner.DebugLevel() > 0,
@@ -109,13 +114,8 @@ func (p *processor) Init(numWorker int, doLoad bool) {
 
 }
 
-func (p *processor) Close(doLoad bool) {
-	if doLoad {
-		p.client.Close()
-	}
-}
-
 func (p *processor) ProcessQuery(q query.Query, isWarm bool) ([]*query.Stat, error) {
+
 	// No need to run again for EXPLAIN
 	if isWarm && p.opts.showExplain {
 		return nil, nil
@@ -124,15 +124,16 @@ func (p *processor) ProcessQuery(q query.Query, isWarm bool) ([]*query.Stat, err
 
 	start := time.Now()
 	qry := string(tq.SqlQuery)
-	defer p.client.Close()
+
 	var res interface{}
 	var err error
-	if p.client.IsConnected() {
-		if res, err = p.client.Query(qry, uint16(writeTimeout)); err != nil {
+
+	if siridb_connector.IsConnected() {
+		if res, err = siridb_connector.Query(qry, uint16(writeTimeout)); err != nil {
 			log.Fatal(err)
 		}
 	} else {
-		log.Fatal("not even a single server is connected...hoi")
+		log.Fatal("not even a single server is connected...")
 	}
 
 	if p.opts.debug {

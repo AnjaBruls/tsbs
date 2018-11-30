@@ -16,6 +16,7 @@ import (
 	"../../cmd/tsbs_generate_queries/databases/cassandra"
 	"../../cmd/tsbs_generate_queries/databases/influx"
 	"../../cmd/tsbs_generate_queries/databases/mongo"
+	"../../cmd/tsbs_generate_queries/databases/siridb"
 	"../../cmd/tsbs_generate_queries/databases/timescaledb"
 	"../../cmd/tsbs_generate_queries/uses/devops"
 	"../../cmd/tsbs_generate_queries/utils"
@@ -41,11 +42,11 @@ var useCaseMatrix = map[string]map[string]utils.QueryFillerMaker{
 	},
 }
 
-const defaultWriteSize  = 4 << 20 // 4 MB
+const defaultWriteSize = 4 << 20 // 4 MB
 
 // Program option vars:
 var (
-	fatal     = log.Fatalf
+	fatal = log.Fatalf
 
 	generator utils.DevopsGenerator
 	filler    utils.QueryFiller
@@ -72,6 +73,8 @@ func getGenerator(format string, start, end time.Time, scale int) utils.DevopsGe
 		return mongo.NewDevops(start, end, scale)
 	} else if format == "mongo-naive" {
 		return mongo.NewNaiveDevops(start, end, scale)
+	} else if format == "siridb" {
+		return siridb.NewDevops(start, end, scale)
 	} else if format == "timescaledb" {
 		tgen := timescaledb.NewDevops(start, end, scale)
 		tgen.UseJSON = timescaleUseJSON

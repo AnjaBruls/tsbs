@@ -1,8 +1,8 @@
 package devops
 
 import (
-	"../../cmd/tsbs_generate_queries/utils"
-	"../../query"
+	"../../../../query"
+	"../../utils"
 )
 
 // MaxAllCPU contains info for filling in a query.Query for "max all" queries

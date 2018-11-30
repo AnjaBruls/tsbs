@@ -2,6 +2,7 @@ package query
 
 import (
 	"bufio"
+	"compress/gzip"
 	"flag"
 	"fmt"
 	"log"
@@ -16,7 +17,7 @@ const (
 	labelColdQueries = "cold queries"
 	labelWarmQueries = "warm queries"
 
-	defaultReadSize  = 4 << 20 // 4 MB
+	defaultReadSize = 4 << 20 // 4 MB
 )
 
 // BenchmarkRunner contains the common components for running a query benchmarking
@@ -34,7 +35,7 @@ type BenchmarkRunner struct {
 	debug          int
 	fileName       string
 
-	br            *bufio.Reader
+	br *bufio.Reader
 }
 
 // NewBenchmarkRunner creates a new instance of BenchmarkRunner which is
@@ -54,7 +55,7 @@ func NewBenchmarkRunner() *BenchmarkRunner {
 	flag.BoolVar(&ret.sp.prewarmQueries, "prewarm-queries", false, "Run each query twice in a row so the warm query is guaranteed to be a cache hit")
 	flag.BoolVar(&ret.printResponses, "print-responses", false, "Pretty print response bodies for correctness checking (default false).")
 	flag.IntVar(&ret.debug, "debug", 0, "Whether to print debug messages.")
-	flag.StringVar(&ret.fileName, "file", "", "File name to read queries from")
+	flag.StringVar(&ret.fileName, "file", "../../../../../../tmp/siridb-queries-lastpoint.gz", "File name to read queries from")
 
 	return ret
 }
@@ -99,7 +100,8 @@ func (b *BenchmarkRunner) GetBufferedReader() *bufio.Reader {
 			if err != nil {
 				panic(fmt.Sprintf("cannot open file for read %s: %v", b.fileName, err))
 			}
-			b.br = bufio.NewReaderSize(file, defaultReadSize)
+			filegzip, err := gzip.NewReader(file) // anja
+			b.br = bufio.NewReaderSize(filegzip, defaultReadSize)
 		} else {
 			// Read from STDIN
 			b.br = bufio.NewReaderSize(os.Stdin, defaultReadSize)
@@ -139,14 +141,12 @@ func (b *BenchmarkRunner) Run(queryPool *sync.Pool, createFn ProcessorCreate) {
 	// channel when done:
 	wg.Wait()
 	b.sp.CloseAndWait()
-
 	wallEnd := time.Now()
 	wallTook := wallEnd.Sub(wallStart)
 	_, err := fmt.Printf("wall clock time: %fsec\n", float64(wallTook.Nanoseconds())/1e9)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	// (Optional) create a memory profile:
 	if len(b.memProfile) > 0 {
 		f, err := os.Create(b.memProfile)

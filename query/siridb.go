@@ -8,8 +8,6 @@ import (
 type SiriDB struct {
 	HumanLabel       []byte
 	HumanDescription []byte
-	CollectionName   []byte
-	SerieName        []byte
 	SqlQuery         []byte
 	id               uint64
 }
@@ -19,7 +17,6 @@ var SiriDBPool = sync.Pool{
 		return &SiriDB{
 			HumanLabel:       make([]byte, 0, 1024),
 			HumanDescription: make([]byte, 0, 1024),
-			SerieName:        make([]byte, 0, 1024),
 			SqlQuery:         make([]byte, 0, 1024),
 		}
 	},
@@ -59,8 +56,7 @@ func (q *SiriDB) Release() {
 	q.HumanLabel = q.HumanLabel[:0]
 	q.HumanDescription = q.HumanDescription[:0]
 	q.id = 0
-	q.SerieName = q.SerieName[:0]
-	q.SqlQuery = q.SqlQuery[:0] // ?
+	q.SqlQuery = q.SqlQuery[:0]
 
 	SiriDBPool.Put(q)
 }

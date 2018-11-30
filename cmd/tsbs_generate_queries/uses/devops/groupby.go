@@ -1,8 +1,8 @@
 package devops
 
 import (
-	"../../cmd/tsbs_generate_queries/utils"
-	"../../query"
+	"../../../../query"
+	"../../utils"
 )
 
 // Groupby produces a QueryFiller for the devops groupby case.

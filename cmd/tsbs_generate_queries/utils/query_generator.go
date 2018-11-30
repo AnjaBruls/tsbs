@@ -1,6 +1,6 @@
 package utils
 
-import "../../query"
+import "../../../query"
 
 // DevopsGenerator is query generator for a database type that handles the Devops use case
 type DevopsGenerator interface {

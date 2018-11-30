@@ -9,7 +9,7 @@ import (
 	"../../uses/devops"
 )
 
-// Devops produces TimescaleDB-specific queries for all the devops query types.
+// Devops produces SiriDB-specific queries for all the devops query types.
 type Devops struct {
 	*devops.Core
 }
@@ -19,18 +19,18 @@ func NewDevops(start, end time.Time, scale int) *Devops {
 	return &Devops{devops.NewCore(start, end, scale)}
 }
 
-// GenerateEmptyQuery returns an empty query.TimescaleDB
+// GenerateEmptyQuery returns an empty query.SiriDB
 func (d *Devops) GenerateEmptyQuery() query.Query {
 	return query.NewSiriDB()
 }
 
 func (d *Devops) getHostWhereWithHostnames(hostnames []string) string {
 	hostnameClauses := []string{}
-	for i, s := range hostnames {
-		hostnameClauses = append(hostnameClauses, fmt.Sprintf("/.*hostname=%s.*/", s))
+	for _, s := range hostnames {
+		hostnameClauses = append(hostnameClauses, fmt.Sprintf(".*(hostname=%s).*", s))
 	}
-	combinedHostnameClause := strings.Join(hostnameClauses, ", ")
-	return combinedHostnameClause
+	combinedHostnameClause := strings.Join(hostnameClauses, "|")
+	return "/" + combinedHostnameClause + "/"
 }
 
 func (d *Devops) getHostWhereString(nhosts int) string {
@@ -38,7 +38,22 @@ func (d *Devops) getHostWhereString(nhosts int) string {
 	return d.getHostWhereWithHostnames(hostnames)
 }
 
-const goTimeFmt = "2006-01-02 15:04:05.999999 -0700"
+func (d *Devops) getMetricWhereString(metrics []string) string {
+	metricsClauses := []string{}
+	for _, s := range metrics {
+		metricsClauses = append(metricsClauses, fmt.Sprintf(".*(Field: %s$).*", s))
+	}
+	combinedMetricsClause := strings.Join(metricsClauses, "|")
+	return "/" + combinedMetricsClause + "/"
+}
+
+const goTimeFmt = "2006-01-02 15:04:05Z"
+
+//[[[[[[[[[[[[[[[[[[[[[[[[[[{{{{{{{MERGE PROBLEM}}}}}}}]]]]]]]]]]]]]]]]]]]]]]]]]]
+//select max(5m) from /.*(Field: usage_guest$).*/ between '2016-01-01T12:00:00Z' and '2016-01-01T13:00:00Z' merge as 'max_per_metric' using max(1) ???
+// select max(5m) from /.*(Field: usage_guest$).*/ & /.*(host_2).*|.*(host_5).*|.*(host_6).*/ before '2016-01-01T13:00:00Z' merge as 'max' using max(1)
+//select max() from /.*(Field: usage_guest$).*|.*(Field: usage_guest_nice$).*|.*(Field: usage_user$).*/ & /.*(host_2).*|.*(host_5).*|.*(host_6).*/
+//[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 // GroupByTime selects the MAX for numMetrics metrics under 'cpu',
 // per minute for nhosts hosts,
@@ -51,17 +66,15 @@ const goTimeFmt = "2006-01-02 15:04:05.999999 -0700"
 // GROUP BY minute ORDER BY minute ASC
 func (d *Devops) GroupByTime(qi query.Query, nHosts, numMetrics int, timeRange time.Duration) {
 	interval := d.Interval.RandWindow(timeRange)
+	metrics := devops.GetCPUMetricsSlice(numMetrics)
+	whereMetrics := d.getMetricWhereString(metrics)
 	whereHosts := d.getHostWhereString(nHosts)
 
 	humanLabel := fmt.Sprintf("SiriDB %d cpu metric(s), random %4d hosts, random %s by 1m", numMetrics, nHosts, timeRange)
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.StartString())
-	influxql := fmt.Sprintf("select max(1m) from %s & /.*Measurement name: cpu .*/ between '%s'  and '%s' ", whereHosts, interval.StartString(), interval.EndString())
-	d.fillInQuery(qi, humanLabel, humanDesc, influxql)
+	siriql := fmt.Sprintf("select max(5m) from %s & %s between '%s'  and '%s' ", whereHosts, whereMetrics, interval.StartString(), interval.EndString())
+	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
 }
-
-// [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
-// select  max(5m) from /.*usage_user.*/ before '2016-01-01T12:00:00Z'
-// [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 // GroupByOrderByLimit populates a query.Query that has a time WHERE clause, that groups by a truncated date, orders by that date, and takes a limit:
 // SELECT time_bucket('1 minute', time) AS t, MAX(cpu) FROM cpu
@@ -72,12 +85,12 @@ func (d *Devops) GroupByOrderByLimit(qi query.Query) {
 	interval := d.Interval.RandWindow(time.Hour)
 	timeStr := interval.End.Format(goTimeFmt)
 
-	where := fmt.Sprintf("WHERE time < '%s'", timeStr)
-	sql := fmt.Sprintf(`SELECT time_bucket('1 minute', time) AS minute, max(usage_user) FROM cpu %s GROUP BY minute ORDER BY minute DESC LIMIT 5`, where)
+	where := fmt.Sprintf("between '%s' - 4m and '%s'", timeStr, timeStr)
+	siriql := fmt.Sprintf("select max(1m) from %s", where)
 
-	humanLabel := "TimescaleDB max cpu over last 5 min-intervals (random end)"
+	humanLabel := "SiriDB max cpu over last 5 min-intervals (random end)"
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.EndString())
-	d.fillInQuery(qi, humanLabel, humanDesc, sql)
+	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
 }
 
 // GroupByTimeAndPrimaryTag selects the AVG of numMetrics metrics under 'cpu' per device per hour for a day,
@@ -88,46 +101,14 @@ func (d *Devops) GroupByOrderByLimit(qi query.Query) {
 // WHERE time >= '$HOUR_START' AND time < '$HOUR_END'
 // GROUP BY hour, hostname ORDER BY hour
 func (d *Devops) GroupByTimeAndPrimaryTag(qi query.Query, numMetrics int) {
-	metrics := devops.GetCPUMetricsSlice(numMetrics)
 	interval := d.Interval.RandWindow(devops.DoubleGroupByDuration)
+	metrics := devops.GetCPUMetricsSlice(numMetrics)
+	whereMetrics := d.getMetricWhereString(metrics)
 
-	selectClauses := make([]string, numMetrics)
-	meanClauses := make([]string, numMetrics)
-	for i, m := range metrics {
-		meanClauses[i] = "mean_" + m
-		selectClauses[i] = fmt.Sprintf("avg(%s) as %s", m, meanClauses[i])
-	}
-
-	hostnameField := "hostname"
-	joinStr := ""
-	if d.UseJSON || d.UseTags {
-		if d.UseJSON {
-			hostnameField = "tags->>'hostname'"
-		} else if d.UseTags {
-			hostnameField = "tags.hostname"
-		}
-		joinStr = "JOIN tags ON cpu_avg.tags_id = tags.id"
-	}
-
-	sql := fmt.Sprintf(`
-        WITH cpu_avg AS (
-          SELECT time_bucket('1 hour', time) as hour, tags_id,
-          %s
-          FROM cpu
-          WHERE time >= '%s' AND time < '%s'
-          GROUP BY hour, tags_id
-        )
-        SELECT hour, %s, %s
-        FROM cpu_avg
-        %s
-        ORDER BY hour, %s`,
-		strings.Join(selectClauses, ", "),
-		interval.Start.Format(goTimeFmt), interval.End.Format(goTimeFmt),
-		hostnameField, strings.Join(meanClauses, ", "),
-		joinStr, hostnameField)
-	humanLabel := devops.GetDoubleGroupByLabel("TimescaleDB", numMetrics)
+	humanLabel := devops.GetDoubleGroupByLabel("SiriDB", numMetrics)
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.StartString())
-	d.fillInQuery(qi, humanLabel, humanDesc, sql)
+	siriql := fmt.Sprintf("select mean(1h) from %s between '%s'  and '%s' ", whereMetrics, interval.StartString(), interval.EndString())
+	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
 }
 
 // MaxAllCPU selects the MAX of all metrics under 'cpu' per hour for nhosts hosts,
@@ -139,37 +120,22 @@ func (d *Devops) GroupByTimeAndPrimaryTag(qi query.Query, numMetrics int) {
 // GROUP BY hour ORDER BY hour
 func (d *Devops) MaxAllCPU(qi query.Query, nHosts int) {
 	interval := d.Interval.RandWindow(devops.MaxAllDuration)
-	metrics := devops.GetAllCPUMetrics()
-	selectClauses := d.getSelectClausesAggMetrics("max", metrics)
 
-	sql := fmt.Sprintf(`SELECT time_bucket('1 hour', time) AS hour,
-    %s
-    FROM cpu
-	WHERE %s AND time >= '%s' AND time < '%s'
-    GROUP BY hour ORDER BY hour`,
-		strings.Join(selectClauses, ", "),
-		d.getHostWhereString(nHosts),
-		interval.Start.Format(goTimeFmt), interval.End.Format(goTimeFmt))
+	whereMetrics := "/.*(Measurement name: cpu).*/"
+	whereHosts := d.getHostWhereString(nHosts)
 
-	humanLabel := devops.GetMaxAllLabel("TimescaleDB", nHosts)
+	humanLabel := devops.GetMaxAllLabel("SiriDB", nHosts)
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.StartString())
-	d.fillInQuery(qi, humanLabel, humanDesc, sql)
+	siriql := fmt.Sprintf("select max(1h) from %s & %s between '%s'  and '%s' ", whereHosts, whereMetrics, interval.StartString(), interval.EndString())
+	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
 }
 
 // LastPointPerHost finds the last row for every host in the dataset
 func (d *Devops) LastPointPerHost(qi query.Query) {
-	var sql string
-	if d.UseTags {
-		sql = fmt.Sprintf("SELECT DISTINCT ON (t.hostname) * FROM tags t INNER JOIN LATERAL(SELECT * FROM cpu c WHERE c.tags_id = t.id ORDER BY time DESC LIMIT 1) AS b ON true ORDER BY t.hostname, b.time DESC")
-	} else if d.UseJSON {
-		sql = fmt.Sprintf("SELECT DISTINCT ON (t.tagset->>'hostname') * FROM tags t INNER JOIN LATERAL(SELECT * FROM cpu c WHERE c.tags_id = t.id ORDER BY time DESC LIMIT 1) AS b ON true ORDER BY t.tagset->>'hostname', b.time DESC")
-	} else {
-		sql = fmt.Sprintf(`SELECT DISTINCT ON (hostname) * FROM cpu ORDER BY hostname, time DESC`)
-	}
-
-	humanLabel := "TimescaleDB last row per host"
+	siriql := "select last() from *"
+	humanLabel := "SiriDB last row per host"
 	humanDesc := humanLabel
-	d.fillInQuery(qi, humanLabel, humanDesc, sql)
+	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
 }
 
 // HighCPUForHosts populates a query that gets CPU metrics when the CPU has high
@@ -181,26 +147,23 @@ func (d *Devops) LastPointPerHost(qi query.Query) {
 // AND time >= '$TIME_START' AND time < '$TIME_END'
 // AND (hostname = '$HOST' OR hostname = '$HOST2'...)
 func (d *Devops) HighCPUForHosts(qi query.Query, nHosts int) {
-	var hostWhereClause string
+	var whereHosts string
 	if nHosts == 0 {
-		hostWhereClause = ""
+		whereHosts = ""
 	} else {
-		hostWhereClause = fmt.Sprintf("AND %s", d.getHostWhereString(nHosts))
+		whereHosts = "& " + d.getHostWhereString(nHosts)
 	}
 	interval := d.Interval.RandWindow(devops.HighCPUDuration)
 
-	sql := fmt.Sprintf(`SELECT * FROM cpu WHERE usage_user > 90.0 and time >= '%s' AND time < '%s' %s`,
-		interval.Start.Format(goTimeFmt), interval.End.Format(goTimeFmt), hostWhereClause)
-
-	humanLabel := devops.GetHighCPULabel("TimescaleDB", nHosts)
+	humanLabel := devops.GetHighCPULabel("Influx", nHosts)
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.StartString())
-	d.fillInQuery(qi, humanLabel, humanDesc, sql)
+	siriql := fmt.Sprintf("select filter(> 90) from /.*(usage_user$).*/ %s between '%s' and '%s' ", whereHosts, interval.StartString(), interval.EndString())
+	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
 }
 
 func (d *Devops) fillInQuery(qi query.Query, humanLabel, humanDesc, sql string) {
-	q := qi.(*query.TimescaleDB)
+	q := qi.(*query.SiriDB)
 	q.HumanLabel = []byte(humanLabel)
 	q.HumanDescription = []byte(humanDesc)
-	q.Hypertable = []byte("cpu")
 	q.SqlQuery = []byte(sql)
 }
