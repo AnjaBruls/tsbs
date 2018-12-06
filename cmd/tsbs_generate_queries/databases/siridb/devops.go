@@ -24,13 +24,22 @@ func (d *Devops) GenerateEmptyQuery() query.Query {
 	return query.NewSiriDB()
 }
 
+// func (d *Devops) getHostWhereWithHostnames(hostnames []string) string {
+// 	hostnameClauses := []string{}
+// 	for _, s := range hostnames {
+// 		hostnameClauses = append(hostnameClauses, fmt.Sprintf(".*(hostname=%s).*", s))
+// 	}
+// 	combinedHostnameClause := strings.Join(hostnameClauses, "|")
+// 	return "/" + combinedHostnameClause + "/"
+// }
+
 func (d *Devops) getHostWhereWithHostnames(hostnames []string) string {
 	hostnameClauses := []string{}
 	for _, s := range hostnames {
-		hostnameClauses = append(hostnameClauses, fmt.Sprintf(".*(hostname=%s).*", s))
+		hostnameClauses = append(hostnameClauses, fmt.Sprintf("`%s`", s))
 	}
 	combinedHostnameClause := strings.Join(hostnameClauses, "|")
-	return "/" + combinedHostnameClause + "/"
+	return combinedHostnameClause
 }
 
 func (d *Devops) getHostWhereString(nhosts int) string {
@@ -38,22 +47,25 @@ func (d *Devops) getHostWhereString(nhosts int) string {
 	return d.getHostWhereWithHostnames(hostnames)
 }
 
+// func (d *Devops) getMetricWhereString(metrics []string) string {
+// 	metricsClauses := []string{}
+// 	for _, s := range metrics {
+// 		metricsClauses = append(metricsClauses, fmt.Sprintf(".*(Field: %s$).*", s))
+// 	}
+// 	combinedMetricsClause := strings.Join(metricsClauses, "|")
+// 	return "/" + combinedMetricsClause + "/"
+// }
+
 func (d *Devops) getMetricWhereString(metrics []string) string {
 	metricsClauses := []string{}
 	for _, s := range metrics {
-		metricsClauses = append(metricsClauses, fmt.Sprintf(".*(Field: %s$).*", s))
+		metricsClauses = append(metricsClauses, fmt.Sprintf("`%s`", s))
 	}
 	combinedMetricsClause := strings.Join(metricsClauses, "|")
-	return "/" + combinedMetricsClause + "/"
+	return combinedMetricsClause
 }
 
 const goTimeFmt = "2006-01-02 15:04:05Z"
-
-//[[[[[[[[[[[[[[[[[[[[[[[[[[{{{{{{{MERGE PROBLEM}}}}}}}]]]]]]]]]]]]]]]]]]]]]]]]]]
-//select max(5m) from /.*(Field: usage_guest$).*/ between '2016-01-01T12:00:00Z' and '2016-01-01T13:00:00Z' merge as 'max_per_metric' using max(1) ???
-// select max(5m) from /.*(Field: usage_guest$).*/ & /.*(host_2).*|.*(host_5).*|.*(host_6).*/ before '2016-01-01T13:00:00Z' merge as 'max' using max(1)
-//select max() from /.*(Field: usage_guest$).*|.*(Field: usage_guest_nice$).*|.*(Field: usage_user$).*/ & /.*(host_2).*|.*(host_5).*|.*(host_6).*/
-//[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 // GroupByTime selects the MAX for numMetrics metrics under 'cpu',
 // per minute for nhosts hosts,
@@ -72,7 +84,7 @@ func (d *Devops) GroupByTime(qi query.Query, nHosts, numMetrics int, timeRange t
 
 	humanLabel := fmt.Sprintf("SiriDB %d cpu metric(s), random %4d hosts, random %s by 1m", numMetrics, nHosts, timeRange)
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.StartString())
-	siriql := fmt.Sprintf("select max(5m) from %s & %s between '%s'  and '%s' ", whereHosts, whereMetrics, interval.StartString(), interval.EndString())
+	siriql := fmt.Sprintf("select max(1m) from %s & %s between '%s' and '%s' merge as 'max grouped by host, metric and time' using max(1)", whereHosts, whereMetrics, interval.StartString(), interval.EndString())
 	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
 }
 
@@ -126,7 +138,7 @@ func (d *Devops) MaxAllCPU(qi query.Query, nHosts int) {
 
 	humanLabel := devops.GetMaxAllLabel("SiriDB", nHosts)
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.StartString())
-	siriql := fmt.Sprintf("select max(1h) from %s & %s between '%s'  and '%s' ", whereHosts, whereMetrics, interval.StartString(), interval.EndString())
+	siriql := fmt.Sprintf("select max(1h) from %s & %s between '%s'  and '%s' merge as 'max cpu per hour' using max(1)", whereHosts, whereMetrics, interval.StartString(), interval.EndString())
 	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
 }
 

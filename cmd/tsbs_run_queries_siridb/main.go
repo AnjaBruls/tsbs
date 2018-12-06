@@ -16,6 +16,7 @@ import (
 	"../../query"
 	siridb "github.com/SiriDB/go-siridb-connector"
 	_ "github.com/lib/pq"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/uses/devops"
 )
 
 const (
@@ -35,6 +36,8 @@ var (
 	dbUser       string
 	dbPass       string
 	showExplain  bool
+	scale        int
+	createGroups bool
 )
 
 // Global vars:
@@ -53,7 +56,9 @@ func init() {
 	flag.StringVar(&datapath, "datapath", "../../../../../tmp/siridb-data.gz", "Path to the zipped file in SiriDB format ")
 	flag.StringVar(&dbUser, "dbuser", "iris", "Username to enter SiriDB")
 	flag.StringVar(&dbPass, "dbpass", "siri", "Password to enter SiriDB")
-	flag.StringVar(&hosts, "hosts", "localhost:9000", "Comma separated list of SiriDB hosts in a cluster.")
+	flag.StringVar(&hosts, "hosts", "localhost:9001", "Comma separated list of SiriDB hosts in a cluster.")
+	flag.IntVar(&scale, "scale", 8, "Scaling variable (Must be the equal to the scalevar used for data generation).")
+	flag.BoolVar(&createGroups, "create groups", false, "Create groups of regular expressions to enhance performance")
 	flag.IntVar(&writeTimeout, "write-timeout", 10, "Write timeout.")
 
 	flag.BoolVar(&showExplain, "show-explain", false, "Print out the EXPLAIN output for sample query")
@@ -87,7 +92,6 @@ func init() {
 }
 
 func main() {
-
 	runner.Run(&query.SiriDBPool, newProcessor)
 	siridb_connector.Close()
 }
@@ -104,8 +108,33 @@ type processor struct {
 
 func newProcessor() query.Processor { return &processor{} }
 
+// regular expression can be put in a grouped in SiriDB to enhance peformances
+func CreateGroups() {
+	metrics := devops.GetAllCPUMetrics()
+	siriql := make([]string, 0, 256)
+	for _, m := range metrics {
+		siriql = append(siriql, fmt.Sprintf("create group `%s` for /.*(%s$).*/", m, m))
+	}
+	for n := 0; n < scale; n++ {
+		host := fmt.Sprintf("host_%d", n)
+		siriql = append(siriql, fmt.Sprintf("create group `%s` for /.*(%s).*/", host, host))
+	}
+	for _, qry := range siriql {
+		if siridb_connector.IsConnected() {
+			if _, err := siridb_connector.Query(qry, uint16(writeTimeout)); err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			log.Fatal("not even a single server is connected...")
+		}
+	}
+}
+
 func (p *processor) Init(numWorker int) {
 	siridb_connector.Connect()
+	if createGroups {
+		CreateGroups()
+	}
 	p.opts = &queryExecutorOptions{
 		showExplain:   showExplain,
 		debug:         runner.DebugLevel() > 0,
