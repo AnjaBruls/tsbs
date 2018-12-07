@@ -96,7 +96,7 @@ func insertTags(db *sqlx.DB, tagRows [][]string, returnResults bool) map[string]
 	return nil
 }
 
-func (p *processor) processCSI(hypertable string, rows []*insertData, doLoad bool) uint64 {
+func (p *processor) processCSI(hypertable string, rows []*insertData) uint64 {
 	tagRows := make([][]string, 0, len(rows))
 	dataRows := make([][]interface{}, 0, len(rows))
 	ret := uint64(0)
@@ -145,58 +145,57 @@ func (p *processor) processCSI(hypertable string, rows []*insertData, doLoad boo
 	}
 
 	// Check if any of these tags has yet to be inserted
-	if doLoad { // anja
-		newTags := make([][]string, 0, len(rows))
-		p.csi.mutex.RLock()
-		for _, cols := range tagRows {
-			if _, ok := p.csi.m[cols[0]]; !ok {
-				newTags = append(newTags, cols)
-			}
-		}
-		p.csi.mutex.RUnlock()
-		if len(newTags) > 0 {
-			p.csi.mutex.Lock()
-			res := insertTags(p.db, newTags, true)
-			for k, v := range res {
-				p.csi.m[k] = v
-			}
-			p.csi.mutex.Unlock()
-		}
 
-		p.csi.mutex.RLock()
-		for i := range dataRows {
-			tagKey := tagRows[i][0]
-			dataRows[i][1] = p.csi.m[tagKey]
+	newTags := make([][]string, 0, len(rows))
+	p.csi.mutex.RLock()
+	for _, cols := range tagRows {
+		if _, ok := p.csi.m[cols[0]]; !ok {
+			newTags = append(newTags, cols)
 		}
-		p.csi.mutex.RUnlock()
-		tx := p.db.MustBegin()
+	}
+	p.csi.mutex.RUnlock()
+	if len(newTags) > 0 {
+		p.csi.mutex.Lock()
+		res := insertTags(p.db, newTags, true)
+		for k, v := range res {
+			p.csi.m[k] = v
+		}
+		p.csi.mutex.Unlock()
+	}
 
-		cols := make([]string, 0, colLen)
-		cols = append(cols, "time", "tags_id", "additional_tags")
-		if inTableTag {
-			cols = append(cols, tableCols["tags"][0])
-		}
-		cols = append(cols, tableCols[hypertable]...)
+	p.csi.mutex.RLock()
+	for i := range dataRows {
+		tagKey := tagRows[i][0]
+		dataRows[i][1] = p.csi.m[tagKey]
+	}
+	p.csi.mutex.RUnlock()
+	tx := p.db.MustBegin()
 
-		stmt, err := tx.Prepare(pq.CopyIn(hypertable, cols...))
-		for _, r := range dataRows {
-			stmt.Exec(r...)
-		}
+	cols := make([]string, 0, colLen)
+	cols = append(cols, "time", "tags_id", "additional_tags")
+	if inTableTag {
+		cols = append(cols, tableCols["tags"][0])
+	}
+	cols = append(cols, tableCols[hypertable]...)
 
-		_, err = stmt.Exec()
-		if err != nil {
-			panic(err)
-		}
+	stmt, err := tx.Prepare(pq.CopyIn(hypertable, cols...))
+	for _, r := range dataRows {
+		stmt.Exec(r...)
+	}
 
-		err = stmt.Close()
-		if err != nil {
-			panic(err)
-		}
+	_, err = stmt.Exec()
+	if err != nil {
+		panic(err)
+	}
 
-		err = tx.Commit()
-		if err != nil {
-			panic(err)
-		}
+	err = stmt.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		panic(err)
 	}
 
 	return ret
@@ -225,23 +224,22 @@ func (p *processor) Close(doLoad bool) {
 }
 
 func (p *processor) ProcessBatch(b load.Batch, doLoad bool) (uint64, uint64) {
-
 	batches := b.(*hypertableArr)
 	rowCnt := 0
 	metricCnt := uint64(0)
-
 	for hypertable, rows := range batches.m {
-		// if doLoad { //anja
-		start := time.Now()
-		metricCnt += p.processCSI(hypertable, rows, doLoad)
+		rowCnt += len(rows)
+		if doLoad {
+			start := time.Now()
+			metricCnt += p.processCSI(hypertable, rows)
 
-		if logBatches {
-			now := time.Now()
-			took := now.Sub(start)
-			batchSize := len(rows)
-			fmt.Printf("BATCH: batchsize %d row rate %f/sec (took %v)\n", batchSize, float64(batchSize)/float64(took.Seconds()), took)
+			if logBatches {
+				now := time.Now()
+				took := now.Sub(start)
+				batchSize := len(rows)
+				fmt.Printf("BATCH: batchsize %d row rate %f/sec (took %v)\n", batchSize, float64(batchSize)/float64(took.Seconds()), took)
+			}
 		}
-		// }
 	}
 	batches.m = map[string][]*insertData{}
 	batches.cnt = 0

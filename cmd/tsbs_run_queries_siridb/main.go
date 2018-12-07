@@ -58,12 +58,12 @@ func init() {
 	flag.StringVar(&dbPass, "dbpass", "siri", "Password to enter SiriDB")
 	flag.StringVar(&hosts, "hosts", "localhost:9001", "Comma separated list of SiriDB hosts in a cluster.")
 	flag.IntVar(&scale, "scale", 8, "Scaling variable (Must be the equal to the scalevar used for data generation).")
-	flag.BoolVar(&createGroups, "create groups", false, "Create groups of regular expressions to enhance performance")
+	flag.BoolVar(&createGroups, "create-groups", false, "Create groups of regular expressions to enhance performance")
 	flag.IntVar(&writeTimeout, "write-timeout", 10, "Write timeout.")
 
 	flag.BoolVar(&showExplain, "show-explain", false, "Print out the EXPLAIN output for sample query")
 
-	if showExplain { //??
+	if showExplain {
 		runner.ResetLimit(1)
 	}
 
@@ -92,6 +92,10 @@ func init() {
 }
 
 func main() {
+	siridb_connector.Connect()
+	if createGroups {
+		CreateGroups() // niet alle groepen zijn in geladen voordat de 'echte' query begint
+	}
 	runner.Run(&query.SiriDBPool, newProcessor)
 	siridb_connector.Close()
 }
@@ -108,7 +112,7 @@ type processor struct {
 
 func newProcessor() query.Processor { return &processor{} }
 
-// regular expression can be put in a grouped in SiriDB to enhance peformances
+// regular expression can be put in a group in SiriDB to enhance peformances
 func CreateGroups() {
 	metrics := devops.GetAllCPUMetrics()
 	siriql := make([]string, 0, 256)
@@ -131,10 +135,6 @@ func CreateGroups() {
 }
 
 func (p *processor) Init(numWorker int) {
-	siridb_connector.Connect()
-	if createGroups {
-		CreateGroups()
-	}
 	p.opts = &queryExecutorOptions{
 		showExplain:   showExplain,
 		debug:         runner.DebugLevel() > 0,

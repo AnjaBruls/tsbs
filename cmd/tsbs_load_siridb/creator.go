@@ -8,30 +8,30 @@ import (
 )
 
 type dbCreator struct {
-	connection map[string]*siridb.Connection
-	hostlist   []string
+	connection []*siridb.Connection
+	hosts      []string
+	ports      []string
 }
 
 // Init should set up any connection or other setup for talking to the DB, but should NOT create any databases
 func (d *dbCreator) Init() {
 
-	d.hostlist = strings.Split(hosts, ",")
-	d.connection = make(map[string]*siridb.Connection)
-	for _, hostport := range d.hostlist {
-		host_port := strings.Split(hostport, ":")
-		host := host_port[0]
-		port, err := strconv.ParseUint(host_port[1], 10, 16)
+	d.hosts = strings.Split(host, ",")
+	d.ports = strings.Split(port, ",")
+	d.connection = make([]*siridb.Connection, 0)
+	for i, _ := range d.ports {
+		portInt64, err := strconv.ParseUint(d.ports[i], 10, 16)
 		if err != nil {
 			fatal(err)
 		}
-		d.connection[hostport] = siridb.NewConnection(host, uint16(port))
+		d.connection = append(d.connection, siridb.NewConnection(d.hosts[i], uint16(portInt64)))
 	}
 }
 
 // DBExists checks if a database with the given name currently exists.
 func (d *dbCreator) DBExists(dbName string) bool {
-	for _, host := range d.hostlist {
-		if err := d.connection[host].Connect(dbUser, dbPass, dbName); err == nil {
+	for _, conn := range d.connection {
+		if err := conn.Connect(dbUser, dbPass, dbName); err == nil {
 			return true
 		}
 	}
@@ -60,36 +60,36 @@ func (d *dbCreator) CreateDB(dbName string) error {
 	options1["duration_num"] = durationNum
 	options1["duration_log"] = durationLog
 
-	if _, err := d.connection[d.hostlist[0]].Manage(account, password, siridb.AdminNewDatabase, options1); err != nil {
+	if _, err := d.connection[0].Manage(account, password, siridb.AdminNewDatabase, options1); err != nil {
 		return err
 	}
 
-	if createNewPool && len(d.hostlist) > 1 {
+	for i := 1; createNewPool && len(d.connection) > 1 && i < len(d.connection); i++ {
 		options2 := make(map[string]interface{})
 		options2["dbname"] = dbName
-		options2["host"] = "localhost"
-		options2["port"] = 9000
+		options2["host"] = d.hosts[0]
+		options2["port"] = d.ports[0]
 		options2["username"] = dbUser
 		options2["password"] = dbPass
 
-		if _, err := d.connection[d.hostlist[1]].Manage(account, password, siridb.AdminNewPool, options2); err != nil {
+		if _, err := d.connection[i].Manage(account, password, siridb.AdminNewPool, options2); err != nil {
 			return err
 		}
 	}
 
-	if createReplica && len(d.hostlist) > 1 {
-		options2 := make(map[string]interface{})
-		options2["dbname"] = dbName
-		options2["host"] = "localhost"
-		options2["port"] = 9000
-		options2["username"] = dbUser
-		options2["password"] = dbPass
-		options2["pool"] = 0
+	// if createReplica && len(d.connection) > 1 {
+	// 	options2 := make(map[string]interface{})
+	// 	options2["dbname"] = dbName
+	// 	options2["host"] = d.hosts[0]
+	// 	options2["port"] = d.ports[0]
+	// 	options2["username"] = dbUser
+	// 	options2["password"] = dbPass
+	// 	options2["pool"] = 0
 
-		if _, err := d.connection[d.hostlist[1]].Manage(account, password, siridb.AdminNewReplica, options2); err != nil {
-			return err
-		}
-	}
+	// 	if _, err := d.connection[1].Manage(account, password, siridb.AdminNewReplica, options2); err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	return nil
 }
