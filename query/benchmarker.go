@@ -53,7 +53,7 @@ func NewBenchmarkRunner() *BenchmarkRunner {
 	flag.StringVar(&ret.memProfile, "memprofile", "", "Write a memory profile to this file.")
 	flag.UintVar(&ret.workers, "workers", 1, "Number of concurrent requests to make.")
 	flag.BoolVar(&ret.sp.prewarmQueries, "prewarm-queries", false, "Run each query twice in a row so the warm query is guaranteed to be a cache hit")
-	flag.BoolVar(&ret.printResponses, "print-responses", true, "Pretty print response bodies for correctness checking (default false).")
+	flag.BoolVar(&ret.printResponses, "print-responses", false, "Pretty print response bodies for correctness checking (default false).")
 	flag.IntVar(&ret.debug, "debug", 0, "Whether to print debug messages.")
 	flag.StringVar(&ret.fileName, "file", "../../../../../../tmp/siridb-queries-single-groupby-1-1-1.gz", "File name to read queries from")
 

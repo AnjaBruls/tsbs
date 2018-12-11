@@ -299,7 +299,6 @@ func getSerializer(sim common.Simulator, format string, out *bufio.Writer) seria
 			for _, field := range fields[measurementName] {
 				out.WriteString(",")
 				out.Write(field)
-
 			}
 			out.WriteString("\n")
 		}
