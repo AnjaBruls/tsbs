@@ -39,14 +39,13 @@ func (d *dbCreator) DBExists(dbName string) bool {
 }
 
 func (d *dbCreator) RemoveOldDB(dbName string) error {
+	options := make(map[string]interface{})
+	options["dbname"] = dbName
+	options["ignore-offline"] = true //????????
 
-	// paths := strings.Split(dbpaths, ",")
-	// for _, dbpath := range paths {
-	// if err := os.RemoveAll(fmt.Sprintf("%s/%s", dbpath, dbName)); err != nil {
-	// 	return err
-	// }
-	// }
-	fatal("Cannot remove database")
+	if _, err := d.connection[0].Manage(account, password, siridb.AdminDropDatabase, options); err != nil {
+		return err
+	}
 	return nil
 }
 

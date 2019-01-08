@@ -39,7 +39,7 @@ func (d *Devops) getHostWhereWithHostnames(hostnames []string) string {
 		hostnameClauses = append(hostnameClauses, fmt.Sprintf("`%s`", s))
 	}
 	combinedHostnameClause := strings.Join(hostnameClauses, "|")
-	return combinedHostnameClause
+	return "(" + combinedHostnameClause + ")"
 }
 
 func (d *Devops) getHostWhereString(nhosts int) string {
@@ -62,7 +62,7 @@ func (d *Devops) getMetricWhereString(metrics []string) string {
 		metricsClauses = append(metricsClauses, fmt.Sprintf("`%s`", s))
 	}
 	combinedMetricsClause := strings.Join(metricsClauses, "|")
-	return combinedMetricsClause
+	return "(" + combinedMetricsClause + ")"
 }
 
 const goTimeFmt = "2006-01-02 15:04:05Z"
@@ -97,8 +97,8 @@ func (d *Devops) GroupByOrderByLimit(qi query.Query) {
 	interval := d.Interval.RandWindow(time.Hour)
 	timeStr := interval.End.Format(goTimeFmt)
 
-	where := fmt.Sprintf("between '%s' - 4m and '%s'", timeStr, timeStr)
-	siriql := fmt.Sprintf("select max(1m) from %s", where)
+	where := fmt.Sprintf("between '%s' - 5m and '%s'", timeStr, timeStr)
+	siriql := fmt.Sprintf("select max(1m) from `cpu` %s", where)
 
 	humanLabel := "SiriDB max cpu over last 5 min-intervals (random end)"
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.EndString())
@@ -133,7 +133,7 @@ func (d *Devops) GroupByTimeAndPrimaryTag(qi query.Query, numMetrics int) {
 func (d *Devops) MaxAllCPU(qi query.Query, nHosts int) {
 	interval := d.Interval.RandWindow(devops.MaxAllDuration)
 
-	whereMetrics := "/.*(Measurement name: cpu).*/"
+	whereMetrics := "`cpu`" ////////////////////////////////// CHANGE TO GROUP
 	whereHosts := d.getHostWhereString(nHosts)
 
 	humanLabel := devops.GetMaxAllLabel("SiriDB", nHosts)
@@ -144,7 +144,7 @@ func (d *Devops) MaxAllCPU(qi query.Query, nHosts int) {
 
 // LastPointPerHost finds the last row for every host in the dataset
 func (d *Devops) LastPointPerHost(qi query.Query) {
-	siriql := "select last() from *"
+	siriql := "select last() from `cpu`"
 	humanLabel := "SiriDB last row per host"
 	humanDesc := humanLabel
 	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
@@ -169,7 +169,7 @@ func (d *Devops) HighCPUForHosts(qi query.Query, nHosts int) {
 
 	humanLabel := devops.GetHighCPULabel("Influx", nHosts)
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.StartString())
-	siriql := fmt.Sprintf("select filter(> 90) from /.*(usage_user$).*/ %s between '%s' and '%s' ", whereHosts, interval.StartString(), interval.EndString())
+	siriql := fmt.Sprintf("select filter(> 90) from `usage_user` %s between '%s' and '%s' ", whereHosts, interval.StartString(), interval.EndString())
 	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
 }
 

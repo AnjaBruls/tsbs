@@ -17,11 +17,13 @@ DATABASE_PASS=${DATABASE_PASS:-siri}
 EXE_DIR=${EXE_DIR:-$(dirname $0)}
 source ${EXE_DIR}/load_common.sh
 
-rm -r ~/workspace/dbtest/dbpath0/benchmark
+if [ -d ~/workspace/dbtest/dbpath0/benchmark ]; then
+  rm -r ~/workspace/dbtest/dbpath0/benchmark
+fi
 
 until nc -z ${DATABASE_HOST} ${DATABASE_PORT}; do
     xterm -e ~/workspace/siridb-server/Release/siridb-server -c  ~/workspace/dbtest/siridb0.conf &
-    echo "Waiting for timescaledb"
+    echo "Waiting for SiriDB"
     sleep 1
 done
 

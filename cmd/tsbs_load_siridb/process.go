@@ -132,7 +132,6 @@ func (p *processor) ProcessBatch(b load.Batch, doLoad bool) (metricCount, rows u
 				}
 				series = append(series, key...)
 				series = append(series, v...)
-				// series = append(series, byte(254))
 			}
 			start := time.Now()
 			if _, err := p.client.InsertBin(series, uint16(writeTimeout)); err != nil {

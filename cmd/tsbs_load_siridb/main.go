@@ -56,9 +56,9 @@
 // 	// flag.BoolVar(&createReplica, "replica", false, "Whether to create a replica.")
 
 // 	flag.StringVar(&host, "host", "localhost", "Comma separated list of SiriDB hosts in a cluster.")
-// 	flag.StringVar(&port, "port", "9001", "Comma separated list of SiriDB ports in a cluster.")
+// 	flag.StringVar(&port, "port", "9000", "Comma separated list of SiriDB ports in a cluster.")
 
-// 	// flag.StringVar(&hosts, "hosts", "localhost:9000,localhost:9001", "Comma separated list of Cassandra hosts in a cluster.")
+// 	// flag.StringVar(&hosts, "hosts", "localhost:9000,localhost:9000", "Comma separated list of Cassandra hosts in a cluster.")
 
 // 	flag.BoolVar(&logBatches, "log-batches", false, "Whether to time individual batches.")
 
@@ -153,7 +153,7 @@ func init() {
 	flag.BoolVar(&createReplica, "replica", false, "Whether to create a replica.")
 
 	flag.StringVar(&host, "host", "localhost", "Comma separated list of SiriDB hosts in a cluster.")
-	flag.StringVar(&port, "port", "9001", "Comma separated list of SiriDB ports in a cluster.")
+	flag.StringVar(&port, "port", "9000", "Comma separated list of SiriDB ports in a cluster.")
 	flag.BoolVar(&logBatches, "log-batches", false, "Whether to time individual batches.")
 
 	flag.IntVar(&replicationFactor, "replication-factor", 1, "Number of nodes that must have a copy of each key.")
