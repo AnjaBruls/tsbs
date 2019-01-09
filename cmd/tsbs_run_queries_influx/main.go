@@ -10,7 +10,7 @@ import (
 	"log"
 	"strings"
 
-	"../../query"
+	"github.com/timescale/tsbs/query"
 )
 
 // Program option vars:

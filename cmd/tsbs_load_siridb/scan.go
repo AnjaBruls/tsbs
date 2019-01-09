@@ -6,7 +6,7 @@
 // 	"strconv"
 // 	"strings"
 
-// 	"../../load"
+// 	"github.com/timescale/tsbs/load"
 // )
 
 // // point is a single row of data keyed by which hypertable it belongs
@@ -120,7 +120,7 @@ import (
 	"io"
 	"log"
 
-	"../../load"
+	"github.com/timescale/tsbs/load"
 )
 
 // HeaderSize if the size of a package header.

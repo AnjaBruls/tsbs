@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"../../query"
+	"github.com/timescale/tsbs/query"
 )
 
 var bytesSlash = []byte("/") // heap optimization

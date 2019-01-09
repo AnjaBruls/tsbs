@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"../serialize"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_data/serialize"
 )
 
 func TestNginxMeasurementTick(t *testing.T) {

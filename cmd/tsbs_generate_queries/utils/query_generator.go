@@ -1,6 +1,6 @@
 package utils
 
-import "../../../query"
+import "github.com/timescale/tsbs/query"
 
 // DevopsGenerator is query generator for a database type that handles the Devops use case
 type DevopsGenerator interface {

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"../../../go-siridb-connector"
+	siridb "github.com/SiriDB/go-siridb-connector"
 )
 
 type dbCreator struct {

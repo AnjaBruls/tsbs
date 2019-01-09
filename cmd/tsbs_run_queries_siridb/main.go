@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"../../query"
 	siridb "github.com/SiriDB/go-siridb-connector"
 	_ "github.com/lib/pq"
 	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/uses/devops"
+	"github.com/timescale/tsbs/query"
 )
 
 const (

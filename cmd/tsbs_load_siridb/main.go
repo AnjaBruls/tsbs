@@ -5,7 +5,7 @@
 // 	"flag"
 // 	"log"
 
-// 	"../../load"
+// 	"github.com/timescale/tsbs/load"
 // )
 
 // const (
@@ -102,7 +102,7 @@ import (
 	"flag"
 	"log"
 
-	"../../load"
+	"github.com/timescale/tsbs/load"
 )
 
 const (

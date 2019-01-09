@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/gocql/gocql"
-	"../../load"
+	"github.com/timescale/tsbs/load"
 )
 
 // Program option vars:

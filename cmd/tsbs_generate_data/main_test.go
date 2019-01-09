@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"../../cmd/tsbs_generate_data/devops"
-	"../../cmd/tsbs_generate_data/serialize"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_data/devops"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_data/serialize"
 )
 
 const (

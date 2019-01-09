@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"../../query"
+	"github.com/timescale/tsbs/query"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )

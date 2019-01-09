@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"../../load"
+	"github.com/timescale/tsbs/load"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 )

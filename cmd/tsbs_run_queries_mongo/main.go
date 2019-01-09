@@ -13,7 +13,7 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"../../query"
+	"github.com/timescale/tsbs/query"
 )
 
 // Program option vars:

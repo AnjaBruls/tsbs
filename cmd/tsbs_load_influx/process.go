@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"../../load"
+	"github.com/timescale/tsbs/load"
 	"github.com/valyala/fasthttp"
 )
 

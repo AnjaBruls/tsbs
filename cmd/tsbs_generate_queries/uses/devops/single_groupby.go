@@ -3,8 +3,8 @@ package devops
 import (
 	"time"
 
-	"../../../../query"
-	"../../utils"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/query"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/utils"
 )
 
 // SingleGroupby contains info for filling in single groupby queries

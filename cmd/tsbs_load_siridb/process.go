@@ -6,7 +6,7 @@
 // 	"strings"
 // 	"time"
 
-// 	"../../load"
+// 	"github.com/timescale/tsbs/load"
 // 	siridb "github.com/SiriDB/go-siridb-connector"
 // )
 
@@ -79,8 +79,8 @@ import (
 	"strings"
 	"time"
 
-	"../../../go-siridb-connector"
-	"../../load"
+	siridb "github.com/SiriDB/go-siridb-connector"
+	"github.com/timescale/tsbs/load"
 	qpack "github.com/transceptor-technology/go-qpack"
 )
 

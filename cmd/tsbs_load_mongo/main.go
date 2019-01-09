@@ -7,7 +7,7 @@ import (
 	"flag"
 	"time"
 
-	"../../load"
+	"github.com/timescale/tsbs/load"
 )
 
 const (

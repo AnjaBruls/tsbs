@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/gocql/gocql"
-	"../../query"
+	"github.com/timescale/tsbs/query"
 )
 
 const (

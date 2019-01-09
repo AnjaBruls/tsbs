@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"../common"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_data/common"
 )
 
 // Count of choices for auto-generated tag values:
