@@ -112,101 +112,6 @@
 // 	}
 // }
 
-// package main
-
-// import (
-// 	"bufio"
-// 	"encoding/binary"
-// 	"io"
-// 	"log"
-
-// 	"../../load"
-// )
-
-// // HeaderSize if the size of a package header.
-// const HeaderSize = 6
-
-// type point struct {
-// 	data      []byte
-// 	metricCnt uint64
-// }
-
-// type batch struct {
-// 	series    []byte
-// 	batchCnt  int
-// 	metricCnt uint64
-// }
-
-// func (b *batch) Len() int {
-// 	return b.batchCnt
-// }
-
-// func (b *batch) Append(item *load.Point) {
-// 	that := item.Data.(*point)
-// 	b.series = append(b.series, that.data...)
-// 	b.batchCnt++
-// 	b.metricCnt += that.metricCnt
-// }
-
-// type factory struct{}
-
-// func (f *factory) New() load.Batch {
-// 	return &batch{
-// 		series:    []byte{byte(253)},
-// 		batchCnt:  0,
-// 		metricCnt: 0,
-// 	}
-// }
-
-// type decoder struct {
-// 	buf []byte
-// 	len uint32
-// }
-
-// func (d *decoder) Read(bf *bufio.Reader) int {
-// 	buf := make([]byte, 8192)
-// 	n, err := bf.Read(buf)
-// 	if err == io.EOF {
-// 		return n
-// 	}
-// 	if err != nil {
-// 		log.Fatal(err.Error())
-// 	}
-
-// 	d.len += uint32(n)
-// 	d.buf = append(d.buf, buf[:n]...)
-// 	return n
-// }
-
-// func (d *decoder) Decode(bf *bufio.Reader) *load.Point {
-
-// 	if d.len < HeaderSize {
-// 		if n := d.Read(bf); n == 0 {
-// 			return nil
-// 		}
-// 	}
-
-// 	lengthData := binary.LittleEndian.Uint32(d.buf[:4])
-// 	metricCnt := binary.LittleEndian.Uint16(d.buf[4:6])
-
-// 	total := lengthData + HeaderSize
-// 	for d.len < total {
-// 		if n := d.Read(bf); n == 0 {
-// 			return nil
-// 		}
-// 	}
-
-// 	data := d.buf[HeaderSize:total]
-
-// 	d.buf = d.buf[total:]
-// 	d.len -= total
-
-// 	return load.NewPoint(&point{
-// 		data:      data,
-// 		metricCnt: uint64(metricCnt),
-// 	})
-// }
-
 package main
 
 import (
@@ -222,8 +127,7 @@ import (
 const HeaderSize = 6
 
 type point struct {
-	key     [][]byte
-	data    [][]byte
+	data    map[string][]byte
 	dataCnt uint64
 }
 
@@ -239,12 +143,11 @@ func (b *batch) Len() int {
 
 func (b *batch) Append(item *load.Point) {
 	that := item.Data.(*point)
-	for i, _ := range that.data {
-		key := string(that.key[i])
-		if len(b.series[key]) == 0 {
-			b.series[key] = append(b.series[key], byte(252)) // qpack: open array
+	for k, v := range that.data {
+		if len(b.series[k]) == 0 {
+			b.series[k] = append(b.series[k], byte(252)) // qpack: open array
 		}
-		b.series[key] = append(b.series[key], that.data[i]...)
+		b.series[k] = append(b.series[k], v...)
 	}
 	b.metricCnt += that.dataCnt
 	b.batchCnt++
@@ -281,7 +184,6 @@ func (d *decoder) Read(bf *bufio.Reader) int {
 }
 
 func (d *decoder) Decode(bf *bufio.Reader) *load.Point {
-
 	if d.len < HeaderSize {
 		if n := d.Read(bf); n == 0 {
 			return nil
@@ -291,8 +193,7 @@ func (d *decoder) Decode(bf *bufio.Reader) *load.Point {
 	d.buf = d.buf[2:]
 	d.len -= 2
 
-	var key [][]byte
-	var data [][]byte
+	data := make(map[string][]byte)
 	for i := 0; uint16(i) < valueCnt; i++ {
 		if d.len < HeaderSize {
 			if n := d.Read(bf); n == 0 {
@@ -308,15 +209,14 @@ func (d *decoder) Decode(bf *bufio.Reader) *load.Point {
 				return nil
 			}
 		}
-		key = append(key, d.buf[4:lengthKey+4])
-		data = append(data, d.buf[lengthKey+4:total])
+		key := string(d.buf[4 : lengthKey+4])
+		data[key] = d.buf[lengthKey+4 : total]
 
 		d.buf = d.buf[total:]
 		d.len -= total
 	}
 
 	return load.NewPoint(&point{
-		key:     key,
 		data:    data,
 		dataCnt: uint64(valueCnt),
 	})
