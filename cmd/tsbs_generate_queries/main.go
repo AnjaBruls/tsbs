@@ -13,13 +13,14 @@ import (
 	"sort"
 	"time"
 
-	"../../cmd/tsbs_generate_queries/databases/cassandra"
-	"../../cmd/tsbs_generate_queries/databases/influx"
-	"../../cmd/tsbs_generate_queries/databases/mongo"
-	"../../cmd/tsbs_generate_queries/databases/siridb"
-	"../../cmd/tsbs_generate_queries/databases/timescaledb"
-	"../../cmd/tsbs_generate_queries/uses/devops"
-	"../../cmd/tsbs_generate_queries/utils"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/databases/cassandra"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/databases/clickhouse"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/databases/influx"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/databases/mongo"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/databases/siridb"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/databases/timescaledb"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/uses/devops"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/utils"
 )
 
 var useCaseMatrix = map[string]map[string]utils.QueryFillerMaker{
@@ -60,6 +61,8 @@ var (
 	timescaleUseJSON bool
 	timescaleUseTags bool
 
+	clickhouseUseTags bool
+
 	interleavedGenerationGroupID uint
 	interleavedGenerationGroups  uint
 )
@@ -67,6 +70,10 @@ var (
 func getGenerator(format string, start, end time.Time, scale int) utils.DevopsGenerator {
 	if format == "cassandra" {
 		return cassandra.NewDevops(start, end, scale)
+	} else if format == "clickhouse" {
+		tgen := clickhouse.NewDevops(start, end, scale)
+		tgen.UseTags = clickhouseUseTags
+		return tgen
 	} else if format == "influx" {
 		return influx.NewDevops(start, end, scale)
 	} else if format == "mongo" {
@@ -118,18 +125,24 @@ func init() {
 		}
 	}
 
-	var useCase, queryType, format, timestampStartStr, timestampEndStr string
-	var scaleVar int
+	var format string
+	var useCase string
+	var queryType string
+	var scale int
+	var timestampStartStr string
+	var timestampEndStr string
 
 	flag.StringVar(&format, "format", "", "Format to emit. (Choices are in the use case matrix.)")
 	flag.StringVar(&useCase, "use-case", "", "Use case to model. (Choices are in the use case matrix.)")
 	flag.StringVar(&queryType, "query-type", "", "Query type. (Choices are in the use case matrix.)")
 
-	flag.IntVar(&scaleVar, "scale-var", 1, "Scaling variable (must be the equal to the scalevar used for data generation).")
+	flag.IntVar(&scale, "scale", 1, "Scaling variable (must be the equal to the scalevar used for data generation).")
 	flag.IntVar(&queryCount, "queries", 1000, "Number of queries to generate.")
 
 	flag.BoolVar(&timescaleUseJSON, "timescale-use-json", false, "TimescaleDB only: Use separate JSON tags table when querying")
 	flag.BoolVar(&timescaleUseTags, "timescale-use-tags", true, "TimescaleDB only: Use separate tags table when querying")
+
+	flag.BoolVar(&clickhouseUseTags, "clickhouse-use-tags", true, "ClickHouse only: Use separate tags table when querying")
 
 	flag.StringVar(&timestampStartStr, "timestamp-start", "2016-01-01T00:00:00Z", "Beginning timestamp (RFC3339).")
 	flag.StringVar(&timestampEndStr, "timestamp-end", "2016-01-02T06:00:00Z", "Ending timestamp (RFC3339).")
@@ -176,7 +189,7 @@ func init() {
 	timestampEnd = timestampEnd.UTC()
 
 	// Make the query generator:
-	generator = getGenerator(format, timestampStart, timestampEnd, scaleVar)
+	generator = getGenerator(format, timestampStart, timestampEnd, scale)
 	filler = useCaseMatrix[useCase][queryType](generator)
 }
 

@@ -10,6 +10,7 @@ Current databases supported:
 + MongoDB [(supplemental docs)](docs/mongo.md)
 + InfluxDB [(supplemental docs)](docs/influx.md)
 + Cassandra [(supplemental docs)](docs/cassandra.md)
++ ClickHouse [(supplemental docs)](docs/clickhouse.md)
 
 ## Overview
 
@@ -37,7 +38,7 @@ In addition to metric readings, 'tags' (including the location
 of the host, its operating system, etc) are generated for each host
 with readings in the dataset. Each unique set of tags identifies
 one host in the dataset and the number of different hosts generated is
-defined by the `scale-var` flag (see below).
+defined by the `scale` flag (see below).
 
 ## What the TSBS tests
 
@@ -99,14 +100,14 @@ Variables needed:
 1. a start time for the data's timestamps. E.g., `2016-01-01T00:00:00Z`
 1. an end time. E.g., `2016-01-04T00:00:00Z`
 1. how much time should be between each reading per device, in seconds. E.g., `10s`
-1. and which database(s) you want to generate for. E.g., `timescaledb` (choose from `cassandra`, `influx`, `mongo`, or `timescaledb`)
+1. and which database(s) you want to generate for. E.g., `timescaledb` (choose from `cassandra`, `influx`, `mongo`, `clickhouse` or `timescaledb`)
 
 Given the above steps you can now generate a dataset (or multiple
 datasets, if you chose to generate for multiple databases) that can
 be used to benchmark data loading of the database(s) chosen using
 the `tsbs_generate_data` tool:
 ```bash
-$ tsbs_generate_data -use-case="cpu-only" -seed=123 -scale-var=4000 \
+$ tsbs_generate_data -use-case="cpu-only" -seed=123 -scale=4000 \
     -timestamp-start="2016-01-01T00:00:00Z" \
     -timestamp-end="2016-01-04T00:00:00Z" \
     -log-interval="10s" -format="timescaledb" \
@@ -116,7 +117,7 @@ $ tsbs_generate_data -use-case="cpu-only" -seed=123 -scale-var=4000 \
 ```
 _Note: We pipe the output to gzip to reduce on-disk space._
 
-The example above will generate a psuedo-CSV file that can be used to
+The example above will generate a pseudo-CSV file that can be used to
 bulk load data into TimescaleDB. Each database has it's own format of how
 it stores the data to make it easiest for its corresponding loader to
 write data. The above configuration will generate just over 100M rows
@@ -135,13 +136,13 @@ Variables needed:
 For the last step there are numerous queries to choose from, which are
 listed in [Appendix I](#appendix-i-query-types). Additionally, the file
 `scripts/generate_queries.sh` contains a list of all of them as the
-default value for the environmental variable `queryTypes`. If you are
+default value for the environmental variable `QUERY_TYPES`. If you are
 generating more than one type of query, we recommend you use that
 helper script.
 
 For generating just one set of queries for a given type:
 ```bash
-$ tsbs_generate_queries -use-case="cpu-only" -seed=123 -scale-var=4000 \
+$ tsbs_generate_queries -use-case="cpu-only" -seed=123 -scale=4000 \
     -timestamp-start="2016-01-01T00:00:00Z" \
     -timestamp-end="2016-01-04T00:00:01Z" \
     -queries=1000 -query-type="single-groupby-1-1-1" -format="timescaledb" \
@@ -150,11 +151,11 @@ $ tsbs_generate_queries -use-case="cpu-only" -seed=123 -scale-var=4000 \
 
 For generating sets of queries for multiple types:
 ```bash
-$ formats="timescaledb" scaleVar=4000 seed=123 \
-    tsStart="2016-01-01T00:00:00Z" \
-    tsEnd="2016-01-04T00:00:01Z" \
-    queries=1000 queryTypes="single-groupby-1-1-1 single-groupby-1-1-12 double-groupby-1" \
-    dataDir="/tmp" scripts/generate_queries.sh
+$ FORMATS="timescaledb" SCALE=4000 SEED=123 \
+    TS_START="2016-01-01T00:00:00Z" \
+    TS_END="2016-01-04T00:00:01Z" \
+    QUERIES=1000 QUERY_TYPES="single-groupby-1-1-1 single-groupby-1-1-12 double-groupby-1" \
+    BULK_DATA_DIR="/tmp/bulk_queries" scripts/generate_queries.sh
 ```
 
 A full list of query types can be found in

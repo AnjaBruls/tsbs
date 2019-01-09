@@ -2,12 +2,13 @@
 //
 // Supported formats:
 // Cassandra CSV format
+// ClickHouse pseudo-CSV format (the same as for TimescaleDB)
 // InfluxDB bulk load format
 // MongoDB BSON format
-// TimescaleDB pseudo-CSV format
+// TimescaleDB pseudo-CSV format (the same as for ClickHouse)
 
 // Supported use cases:
-// devops: scale-var is the number of hosts to simulate, with log messages
+// devops: scale is the number of hosts to simulate, with log messages
 //         every log-interval seconds.
 // cpu-only: same as `devops` but only generate metrics for CPU
 package main
@@ -34,6 +35,7 @@ import (
 const (
 	// Output data format choices (alphabetical order)
 	formatCassandra   = "cassandra"
+	formatClickhouse  = "clickhouse"
 	formatInflux      = "influx"
 	formatMongo       = "mongo"
 	formatTimescaleDB = "timescaledb"
@@ -53,7 +55,19 @@ const (
 
 // semi-constants
 var (
-	formatChoices = []string{formatCassandra, formatInflux, formatMongo, formatTimescaleDB, formatSiriDB}
+	formatChoices = []string{
+		formatCassandra,
+		formatClickhouse,
+		formatInflux,
+		formatMongo,
+		formatTimescaleDB,
+		formatSiriDB,
+	}
+	useCaseChoices = []string{
+		useCaseCPUOnly,
+		useCaseCPUSingle,
+		useCaseDevops,
+	}
 	// allows for testing
 	fatal = log.Fatalf
 )
@@ -65,7 +79,7 @@ type parseableFlagVars struct {
 	timestampStartStr string
 	timestampEndStr   string
 	seed              int64
-	initScaleVar      uint64
+	initialScale      uint64
 }
 
 // Program option vars:
@@ -74,39 +88,46 @@ var (
 	useCase     string
 	profileFile string
 
-	initScaleVar uint64
-	scaleVar     uint64
+	initialScale uint64
+	scale        uint64
 	seed         int64
 	debug        int
 
 	timestampStart time.Time
 	timestampEnd   time.Time
 
-	interleavedGenerationGroupID uint
-	interleavedGenerationGroups  uint
+	interleavedGenerationGroupID   uint
+	interleavedGenerationGroupsNum uint
 
-	logInterval time.Duration
-	fileName    string
+	logInterval   time.Duration
+	maxDataPoints uint64
+	fileName      string
 )
 
+// parseTimeFromString parses string-represented time of the format 2006-01-02T15:04:05Z07:00
 func parseTimeFromString(s string) time.Time {
 	t, err := time.Parse(time.RFC3339, s)
 	if err != nil {
-		fatal("%v", err)
+		fatal("can not parse time from string '%s': %v", s, err)
 		return time.Time{}
 	}
 	return t.UTC()
 }
 
-func validateGroups(groupID, totalGroups uint) (bool, error) {
-	if totalGroups == 0 {
+// validateGroups checks validity of combination groupID and totalGroups
+func validateGroups(groupID, totalGroupsNum uint) (bool, error) {
+	if totalGroupsNum == 0 {
+		// Need at least one group
 		return false, fmt.Errorf(errTotalGroupsZero)
-	} else if groupID >= totalGroups {
-		return false, fmt.Errorf(errInvalidGroupsFmt, groupID, totalGroups)
+	}
+	if groupID >= totalGroupsNum {
+		// Need reasonable groupID
+		return false, fmt.Errorf(errInvalidGroupsFmt, groupID, totalGroupsNum)
 	}
 	return true, nil
 }
 
+// validateFormat checks whether format is valid (i.e., one of formatChoices)
 func validateFormat(format string) bool {
 	for _, s := range formatChoices {
 		if s == format {
@@ -116,11 +137,22 @@ func validateFormat(format string) bool {
 	return false
 }
 
+// validateUseCase checks whether use-case is valid (i.e., one of useCaseChoices)
+func validateUseCase(useCase string) bool {
+	for _, s := range useCaseChoices {
+		if s == useCase {
+			return true
+		}
+	}
+	return false
+}
+
+// postFlagParse assigns parseable flags
 func postFlagParse(flags parseableFlagVars) {
-	if flags.initScaleVar == 0 {
-		initScaleVar = scaleVar
+	if flags.initialScale == 0 {
+		initialScale = scale
 	} else {
-		initScaleVar = flags.initScaleVar
+		initialScale = flags.initialScale
 	}
 
 	// the default seed is the current timestamp:
@@ -155,12 +187,13 @@ func GetBufferedWriter(fileName string) *bufio.Writer {
 // Parse args:
 func init() {
 	pfv := parseableFlagVars{}
+
 	flag.StringVar(&format, "format", "", fmt.Sprintf("Format to emit. (choices: %s)", strings.Join(formatChoices, ", ")))
 
-	flag.StringVar(&useCase, "use-case", "", "Use case to model. (choices: devops, cpu-only)")
+	flag.StringVar(&useCase, "use-case", "", fmt.Sprintf("Use case to model. (choices: %s)", strings.Join(useCaseChoices, ", ")))
 
-	flag.Uint64Var(&pfv.initScaleVar, "initial-scale-var", 0, "Initial scaling variable specific to the use case (e.g., devices in 'devops'). 0 means to use -scale-var value")
-	flag.Uint64Var(&scaleVar, "scale-var", 1, "Scaling variable specific to the use case (e.g., devices in 'devops').")
+	flag.Uint64Var(&pfv.initialScale, "initial-scale", 0, "Initial scaling variable specific to the use case (e.g., devices in 'devops'). 0 means to use -scale value")
+	flag.Uint64Var(&scale, "scale", 1, "Scaling value specific to the use case (e.g., devices in 'devops').")
 
 	flag.StringVar(&pfv.timestampStartStr, "timestamp-start", "2016-01-01T00:00:00Z", "Beginning timestamp (RFC3339).")
 	flag.StringVar(&pfv.timestampEndStr, "timestamp-end", "2016-01-02T06:00:00Z", "Ending timestamp (RFC3339).")
@@ -169,11 +202,15 @@ func init() {
 
 	flag.IntVar(&debug, "debug", 0, "Debug printing (choices: 0, 1, 2). (default 0)")
 
-	flag.UintVar(&interleavedGenerationGroupID, "interleaved-generation-group-id", 0, "Group (0-indexed) to perform round-robin serialization within. Use this to scale up data generation to multiple processes.")
-	flag.UintVar(&interleavedGenerationGroups, "interleaved-generation-groups", 1, "The number of round-robin serialization groups. Use this to scale up data generation to multiple processes.")
+	flag.UintVar(&interleavedGenerationGroupID, "interleaved-generation-group-id", 0,
+		"Group (0-indexed) to perform round-robin serialization within. Use this to scale up data generation to multiple processes.")
+	flag.UintVar(&interleavedGenerationGroupsNum, "interleaved-generation-groups", 1,
+		"The number of round-robin serialization groups. Use this to scale up data generation to multiple processes.")
+
 	flag.StringVar(&profileFile, "profile-file", "", "File to which to write go profiling data")
 
 	flag.DurationVar(&logInterval, "log-interval", 10*time.Second, "Duration between host data points")
+	flag.Uint64Var(&maxDataPoints, "max-data-points", 0, "Limit the number of data points to generate, 0 = no limit")
 	flag.StringVar(&fileName, "file", "", "File name to write generated data to")
 
 	flag.Parse()
@@ -182,11 +219,14 @@ func init() {
 }
 
 func main() {
-	if ok, err := validateGroups(interleavedGenerationGroupID, interleavedGenerationGroups); !ok {
-		fatal(err.Error())
+	if ok, err := validateGroups(interleavedGenerationGroupID, interleavedGenerationGroupsNum); !ok {
+		fatal("incorrect interleaved groups specification: %v", err)
 	}
 	if ok := validateFormat(format); !ok {
-		fatal("invalid format specifier: %v (valid choices: %v)", format, formatChoices)
+		fatal("invalid format specified: %v (valid choices: %v)", format, formatChoices)
+	}
+	if ok := validateUseCase(useCase); !ok {
+		fatal("invalid use-case specified: %v (valid choices: %v)", useCase, useCaseChoices)
 	}
 
 	if len(profileFile) > 0 {
@@ -205,14 +245,14 @@ func main() {
 	}()
 
 	cfg := getConfig(useCase)
-	sim := cfg.ToSimulator(logInterval)
+	sim := cfg.NewSimulator(logInterval, maxDataPoints)
 	serializer := getSerializer(sim, format, out)
 
-	runSimulator(sim, serializer, out, interleavedGenerationGroupID, interleavedGenerationGroups)
+	runSimulator(sim, serializer, out, interleavedGenerationGroupID, interleavedGenerationGroupsNum)
 }
 
 func runSimulator(sim common.Simulator, serializer serialize.PointSerializer, out io.Writer, groupID, totalGroups uint) {
-	currGroup := uint(0)
+	currGroupID := uint(0)
 	point := serialize.NewPoint()
 	for !sim.Finished() {
 		write := sim.Next(point)
@@ -222,16 +262,16 @@ func runSimulator(sim common.Simulator, serializer serialize.PointSerializer, ou
 		}
 
 		// in the default case this is always true
-		if currGroup == groupID {
+		if currGroupID == groupID {
 			err := serializer.Serialize(point, out)
 			if err != nil {
-				fatal("%v", err)
+				fatal("can not serialize point: %s", err)
 				return
 			}
 		}
 		point.Reset()
 
-		currGroup = (currGroup + 1) % totalGroups
+		currGroupID = (currGroupID + 1) % totalGroups
 	}
 }
 
@@ -242,8 +282,8 @@ func getConfig(useCase string) common.SimulatorConfig {
 			Start: timestampStart,
 			End:   timestampEnd,
 
-			InitHostCount:   initScaleVar,
-			HostCount:       scaleVar,
+			InitHostCount:   initialScale,
+			HostCount:       scale,
 			HostConstructor: devops.NewHost,
 		}
 	case useCaseCPUOnly:
@@ -251,8 +291,8 @@ func getConfig(useCase string) common.SimulatorConfig {
 			Start: timestampStart,
 			End:   timestampEnd,
 
-			InitHostCount:   initScaleVar,
-			HostCount:       scaleVar,
+			InitHostCount:   initialScale,
+			HostCount:       scale,
 			HostConstructor: devops.NewHostCPUOnly,
 		}
 	case useCaseCPUSingle:
@@ -260,8 +300,8 @@ func getConfig(useCase string) common.SimulatorConfig {
 			Start: timestampStart,
 			End:   timestampEnd,
 
-			InitHostCount:   initScaleVar,
-			HostCount:       scaleVar,
+			InitHostCount:   initialScale,
+			HostCount:       scale,
 			HostConstructor: devops.NewHostCPUSingle,
 		}
 	default:
@@ -280,6 +320,8 @@ func getSerializer(sim common.Simulator, format string, out *bufio.Writer) seria
 		return &serialize.MongoSerializer{}
 	case formatSiriDB:
 		return &serialize.SiriDBSerializer{}
+	case formatClickhouse:
+		fallthrough
 	case formatTimescaleDB:
 		out.WriteString("tags")
 		for _, key := range devops.MachineTagKeys {

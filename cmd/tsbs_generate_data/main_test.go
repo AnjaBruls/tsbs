@@ -91,19 +91,30 @@ func TestValidateFormat(t *testing.T) {
 	}
 }
 
+func TestValidateUseCase(t *testing.T) {
+	for _, f := range useCaseChoices {
+		if !validateUseCase(f) {
+			t.Errorf("use-case '%s' did not return true when it should", f)
+		}
+	}
+	if validateUseCase("incorrect use-case!") {
+		t.Errorf("validateUseCase returned true for invalid use-case")
+	}
+}
+
 func TestPostFlagsParse(t *testing.T) {
-	scaleVar = 100
+	scale = 100
 	timestampStart = time.Time{}
 	timestampEnd = time.Time{}
 	boringPFV := parseableFlagVars{
-		initScaleVar:      1,
+		initialScale:      1,
 		seed:              123,
 		timestampStartStr: correctTimeStr,
 		timestampEndStr:   correctTimeStr,
 	}
 	postFlagParse(boringPFV)
-	if initScaleVar != boringPFV.initScaleVar {
-		t.Errorf("specified initScaleVar not set correctly: got %d", initScaleVar)
+	if initialScale != boringPFV.initialScale {
+		t.Errorf("specified initScale not set correctly: got %d", initialScale)
 	}
 	if seed != boringPFV.seed {
 		t.Errorf("specified seed not set correctly: got %d", seed)
@@ -115,21 +126,21 @@ func TestPostFlagsParse(t *testing.T) {
 		t.Errorf("end time not parsed correctly: got %v", timestampEnd)
 	}
 
-	// initScaleVar should set to the same as scaleVar
+	// initScale should set to the same as scale
 	testPFV := parseableFlagVars{
-		initScaleVar:      0,
+		initialScale:      0,
 		seed:              boringPFV.seed,
 		timestampStartStr: boringPFV.timestampStartStr,
 		timestampEndStr:   boringPFV.timestampEndStr,
 	}
 	postFlagParse(testPFV)
-	if initScaleVar != scaleVar {
-		t.Errorf("initScaleVar = 0 not parsed correctly: got %d", initScaleVar)
+	if initialScale != scale {
+		t.Errorf("initScale = 0 not parsed correctly: got %d", initialScale)
 	}
 
 	// seed should set to current time
 	testPFV = parseableFlagVars{
-		initScaleVar:      boringPFV.initScaleVar,
+		initialScale:      boringPFV.initialScale,
 		seed:              0,
 		timestampStartStr: boringPFV.timestampStartStr,
 		timestampEndStr:   boringPFV.timestampEndStr,
@@ -146,7 +157,7 @@ func TestPostFlagsParse(t *testing.T) {
 		fatalCalled = true
 	}
 	testPFV = parseableFlagVars{
-		initScaleVar:      boringPFV.initScaleVar,
+		initialScale:      boringPFV.initialScale,
 		seed:              boringPFV.seed,
 		timestampStartStr: incorrectTimeStr,
 		timestampEndStr:   boringPFV.timestampEndStr,
@@ -157,7 +168,7 @@ func TestPostFlagsParse(t *testing.T) {
 	}
 
 	testPFV = parseableFlagVars{
-		initScaleVar:      boringPFV.initScaleVar,
+		initialScale:      boringPFV.initialScale,
 		seed:              boringPFV.seed,
 		timestampStartStr: boringPFV.timestampStartStr,
 		timestampEndStr:   incorrectTimeStr,
@@ -351,7 +362,7 @@ func TestGetConfig(t *testing.T) {
 
 func TestGetSerializer(t *testing.T) {
 	cfg := getConfig(useCaseCPUOnly)
-	sim := cfg.ToSimulator(logInterval)
+	sim := cfg.NewSimulator(logInterval, 0)
 	buf := bytes.NewBuffer(make([]byte, 1024))
 	out := bufio.NewWriter(buf)
 	defer out.Flush()
