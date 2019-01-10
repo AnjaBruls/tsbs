@@ -117,7 +117,6 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"log"
 
@@ -210,7 +209,6 @@ func (d *decoder) Decode(bf *bufio.Reader) *load.Point {
 				return nil
 			}
 		}
-		fmt.Println(string(d.buf[4 : lengthKey+4]))
 		key := string(d.buf[4 : lengthKey+4])
 		data[key] = d.buf[lengthKey+4 : total]
 
