@@ -64,7 +64,7 @@ func init() {
 	flag.BoolVar(&showExplain, "show-explain", false, "Print out the EXPLAIN output for sample query")
 
 	if showExplain {
-		runner.ResetLimit(1)
+		runner.SetLimit(1)
 	}
 
 	flag.Parse()
