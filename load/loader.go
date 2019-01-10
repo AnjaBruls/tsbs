@@ -2,7 +2,6 @@ package load
 
 import (
 	"bufio"
-	"compress/gzip"
 	"flag"
 	"fmt"
 	"log"
@@ -87,7 +86,7 @@ func GetBenchmarkRunnerWithBatchSize(batchSize uint) *BenchmarkRunner {
 	flag.UintVar(&loader.batchSize, "batch-size", batchSize, "Number of items to batch together in a single insert")
 	flag.UintVar(&loader.workers, "workers", 1, "Number of parallel clients inserting")
 	flag.Uint64Var(&loader.limit, "limit", 0, "Number of items to insert (0 = all of them).")
-	flag.BoolVar(&loader.doLoad, "do-load", false, "Whether to write data. Set this flag to false to check input read speed.")
+	flag.BoolVar(&loader.doLoad, "do-load", true, "Whether to write data. Set this flag to false to check input read speed.")
 	flag.BoolVar(&loader.doCreateDB, "do-create-db", true, "Whether to create the database. Disable on all but one client if running on a multi client setup.")
 	flag.BoolVar(&loader.doAbortOnExist, "do-abort-on-exist", false, "Whether to abort if a database with the given name already exists.")
 	flag.DurationVar(&loader.reportingPeriod, "reporting-period", 10*time.Second, "Period to report write stats")
@@ -147,8 +146,7 @@ func (l *BenchmarkRunner) GetBufferedReader() *bufio.Reader {
 				fatal("cannot open file for read %s: %v", l.fileName, err)
 				return nil
 			}
-			filegzip, err := gzip.NewReader(file) // anja
-			l.br = bufio.NewReaderSize(filegzip, defaultReadSize)
+			l.br = bufio.NewReaderSize(file, defaultReadSize)
 
 		} else {
 			// Read from STDIN
