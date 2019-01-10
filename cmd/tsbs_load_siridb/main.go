@@ -145,10 +145,8 @@ func init() {
 	flag.StringVar(&dbPass, "dbpass", "siri", "Password to enter SiriDB")
 
 	flag.StringVar(&dbpaths, "dbpaths", "../../../siridb-server/dbtest/dbpath0", "Database paths")
-	// flag.StringVar(&dbpaths, "dbpaths", "../../../siridb-server/dbtest/dbpath0,../../../siridb-server/dbtest/dbpath1", "Database paths")
 
 	flag.BoolVar(&createNewPool, "pool", false, "Whether to create a new pool.")
-	// flag.BoolVar(&createNewPool, "pool", true, "Whether to create a new pool.")
 
 	flag.BoolVar(&createReplica, "replica", false, "Whether to create a replica.")
 
