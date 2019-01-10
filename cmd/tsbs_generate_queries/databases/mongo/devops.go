@@ -7,7 +7,7 @@ import (
 
 	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/utils"
 	"github.com/globalsign/mgo/bson"
-	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/query"
+	"github.com/timescale/tsbs/query"
 	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/uses/devops"
 )
 
