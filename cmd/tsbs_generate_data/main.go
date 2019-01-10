@@ -27,9 +27,9 @@ import (
 	"strings"
 	"time"
 
-	"./common"
-	"./devops"
-	"./serialize"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_data/common"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_data/devops"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_data/serialize"
 )
 
 const (
@@ -38,8 +38,8 @@ const (
 	formatClickhouse  = "clickhouse"
 	formatInflux      = "influx"
 	formatMongo       = "mongo"
-	formatTimescaleDB = "timescaledb"
 	formatSiriDB      = "siridb"
+	formatTimescaleDB = "timescaledb"
 
 	// Use case choices (make sure to update TestGetConfig if adding a new one)
 	useCaseCPUOnly   = "cpu-only"
@@ -60,8 +60,8 @@ var (
 		formatClickhouse,
 		formatInflux,
 		formatMongo,
-		formatTimescaleDB,
 		formatSiriDB,
+		formatTimescaleDB,
 	}
 	useCaseChoices = []string{
 		useCaseCPUOnly,
