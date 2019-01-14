@@ -13,12 +13,16 @@ DATA_FILE_NAME=${DATA_FILE_NAME:-siridb-data.gz}
 # Load parameters - personal
 DATABASE_USER=${DATABASE_USER:-iris}
 DATABASE_PASS=${DATABASE_PASS:-siri}
+DATABASE_PORT=${DATABASE_PORT:-9000}
+SIRIDB_SERVER_DIR=${SIRIDB_SERVER_DIR:-"/home/anja/workspace/siridb-server/Release/siridb-server"}
+DB_DIR=${DB_DIR:-"/home/anja/workspace/dbtest/siridb0.conf"}
+
 
 EXE_DIR=${EXE_DIR:-$(dirname $0)}
 source ${EXE_DIR}/load_common.sh
 
 until nc -z ${DATABASE_HOST} ${DATABASE_PORT}; do
-    xterm -e ~/workspace/siridb-server/Release/siridb-server -c  ~/workspace/dbtest/siridb0.conf &
+    xterm -e ${SIRIDB_SERVER_DIR} -c ${DB_DIR} &
     echo "Waiting for SiriDB"
     sleep 1
 done

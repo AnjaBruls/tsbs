@@ -1,7 +1,6 @@
-// tsbs_run_queries_timescaledb speed tests TimescaleDB using requests from stdin or file
+// tsbs_run_queries_siridb speed tests SiriDB using requests from stdin or file
 //
-// It reads encoded Query objects from stdin or file, and makes concurrent requests
-// to the provided PostgreSQL/TimescaleDB endpoint.
+
 // This program has no knowledge of the internals of the endpoint.
 package main
 
@@ -53,11 +52,11 @@ var (
 func init() {
 	runner = query.NewBenchmarkRunner()
 
-	flag.StringVar(&datapath, "datapath", "../../../../../tmp/siridb-data.gz", "Path to the zipped file in SiriDB format ")
+	flag.StringVar(&datapath, "datapath", "/tmp/bulk_queries/siridb-queries.gz", "Path to the zipped file in SiriDB format ")
 	flag.StringVar(&dbUser, "dbuser", "iris", "Username to enter SiriDB")
 	flag.StringVar(&dbPass, "dbpass", "siri", "Password to enter SiriDB")
 	flag.StringVar(&hosts, "hosts", "localhost:9000", "Comma separated list of SiriDB hosts in a cluster.")
-	flag.IntVar(&scale, "scale", 8, "Scaling variable (Must be the equal to the scalevar used for data generation).")
+	flag.IntVar(&scale, "scale", 20, "Scaling variable (Must be the equal to the scalevar used for data generation).")
 	flag.BoolVar(&createGroups, "create-groups", false, "Create groups of regular expressions to enhance performance")
 	flag.IntVar(&writeTimeout, "write-timeout", 10, "Write timeout.")
 
@@ -116,19 +115,20 @@ func newProcessor() query.Processor { return &processor{} }
 // regular expression can be put in a group in SiriDB to enhance peformance
 func CreateGroups() {
 	metrics := devops.GetAllCPUMetrics()
-	siriql := make([]string, 0, 256)
+	siriql := make([]string, 0, 2048)
 	for _, m := range metrics {
-		siriql = append(siriql, fmt.Sprintf("create group `%s` for /.*(%s$).*/", m, m))
+		siriql = append(siriql, fmt.Sprintf("create group `%s` for /.*%s$/", m, m))
 	}
 	for n := 0; n < scale; n++ {
 		host := fmt.Sprintf("host_%d", n)
-		siriql = append(siriql, fmt.Sprintf("create group `%s` for /.*(%s).*/", host, host))
+		siriql = append(siriql, fmt.Sprintf("create group `%s` for /.*%s,.*/", host, host))
 	}
 	siriql = append(siriql, fmt.Sprintf("create group `cpu` for /.*(Measurement name: cpu).*/"))
 	for _, qry := range siriql {
 		if siridb_connector.IsConnected() {
 			if _, err := siridb_connector.Query(qry, uint16(writeTimeout)); err != nil {
-				log.Fatal(err)
+				fmt.Println(err)
+				break
 			}
 		} else {
 			log.Fatal("not even a single server is connected...")
@@ -160,7 +160,6 @@ func (p *processor) ProcessQuery(q query.Query, isWarm bool) ([]*query.Stat, err
 	var err error
 
 	if siridb_connector.IsConnected() {
-		fmt.Println(qry)
 		if res, err = siridb_connector.Query(qry, uint16(writeTimeout)); err != nil {
 			log.Fatal(err)
 		}

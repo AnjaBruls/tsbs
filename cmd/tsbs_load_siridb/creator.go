@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"strconv"
 	"strings"
 
@@ -40,22 +40,13 @@ func (d *dbCreator) DBExists(dbName string) bool {
 }
 
 func (d *dbCreator) RemoveOldDB(dbName string) error {
-	options := make(map[string]interface{})
-
-	options["database"] = dbName
-	options["ignore_offline"] = true /* Usually the database will be removed from all servers in the cluster and therefore an error is returned in case one or more servers are offline. This flag can be used to ignore offline servers. */
-
-	if _, err := d.connection[0].Manage(account, password, siridb.AdminDropDatabase, options); err != nil {
-		return err
-	} else {
-		fmt.Printf("successfully dropped database: %s\n", dbName)
-	}
-	return nil
+	var msg error = errors.New("Database cannot be dropped. You need to stop the server and remove the database directory in your DBPATH.")
+	return msg
 }
 
 // CreateDB creates a database with the given name.
 func (d *dbCreator) CreateDB(dbName string) error {
-
+	defer d.Close()
 	options1 := make(map[string]interface{})
 	options1["dbname"] = dbName
 	options1["time_precision"] = timePrecision
