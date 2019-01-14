@@ -47,8 +47,6 @@ func (p *processor) Close(doLoad bool) {
 	}
 }
 
-var teller = 0
-
 func (p *processor) ProcessBatch(b load.Batch, doLoad bool) (metricCount, rows uint64) {
 	batch := b.(*batch)
 	if doLoad {
