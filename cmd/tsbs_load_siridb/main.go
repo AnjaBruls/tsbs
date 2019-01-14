@@ -43,11 +43,11 @@ var fatal = log.Fatal
 // Parse args:
 func init() {
 	loader = load.GetBenchmarkRunner()
-	flag.StringVar(&datapath, "datapath", "../../../../../tmp/siridb-data.gz", "Path to the zipped file in SiriDB format ")
+	flag.StringVar(&datapath, "datapath", "", "Path to the zipped file in SiriDB format ")
 	flag.StringVar(&dbUser, "dbuser", "iris", "Username to enter SiriDB")
 	flag.StringVar(&dbPass, "dbpass", "siri", "Password to enter SiriDB")
 
-	flag.StringVar(&dbpaths, "dbpaths", "../../../siridb-server/dbtest/dbpath0", "Database paths")
+	flag.StringVar(&dbpaths, "dbpaths", "", "Database paths")
 
 	flag.BoolVar(&createNewPool, "pool", false, "Whether to create a new pool.")
 

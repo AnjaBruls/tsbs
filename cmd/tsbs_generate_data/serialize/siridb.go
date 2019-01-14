@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strconv"
 
 	"github.com/transceptor-technology/go-qpack"
@@ -39,15 +40,13 @@ func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
 	}
 	var err error
 	metricCount := 0
-	line := make([]byte, 0)
+	line := make([]byte, 0, 1024)
 	for i, value := range p.fieldValues {
 		ts, _ := strconv.ParseInt(fmt.Sprintf("%d", p.timestamp.UTC().UnixNano()), 10, 64)
 
-		key := make([]byte, 0, 1024) // 512?
-		key = append(key, name...)
-		key = append(key, []byte("  Field: ")...)
+		key := []byte("  Field: ")
 		key = append(key, p.fieldKeys[i]...)
-
+		fmt.Fprintf(os.Stderr, "key: %s\n", key) // int64????
 		data, err := qpack.Pack([]interface{}{ts, value})
 		if err != nil {
 			log.Fatal(err)
@@ -69,6 +68,11 @@ func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
 	lenMetrics := make([]byte, 2)
 	binary.LittleEndian.PutUint16(lenMetrics, uint16(metricCount))
 
+	lenName := make([]byte, 2)
+	binary.LittleEndian.PutUint16(lenName, uint16(len(name)))
+
+	line = append(name, line...)
+	line = append(lenName, line...)
 	line = append(lenMetrics, line...)
 
 	_, err = w.Write(line)

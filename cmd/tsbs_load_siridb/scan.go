@@ -3,14 +3,12 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 
 	"github.com/timescale/tsbs/load"
 )
-
-// HeaderSize if the size of a package header.
-const HeaderSize = 6
 
 type point struct {
 	data    map[string][]byte
@@ -70,18 +68,31 @@ func (d *decoder) Read(bf *bufio.Reader) int {
 }
 
 func (d *decoder) Decode(bf *bufio.Reader) *load.Point {
-	if d.len < HeaderSize {
+	if d.len < 4 {
 		if n := d.Read(bf); n == 0 {
 			return nil
 		}
 	}
 	valueCnt := binary.LittleEndian.Uint16(d.buf[:2])
-	d.buf = d.buf[2:]
-	d.len -= 2
+	nameCnt := binary.LittleEndian.Uint16(d.buf[2:4])
+
+	d.buf = d.buf[4:]
+	d.len -= 4
+
+	if d.len < nameCnt {
+		if n := d.Read(bf); n == 0 {
+			return nil
+		}
+	}
+
+	name := d.buf[:nameCnt]
+
+	d.buf = d.buf[nameCnt:]
+	d.len -= nameCnt
 
 	data := make(map[string][]byte)
 	for i := 0; uint16(i) < valueCnt; i++ {
-		if d.len < HeaderSize {
+		if d.len < 4 {
 			if n := d.Read(bf); n == 0 {
 				return nil
 			}
@@ -89,13 +100,15 @@ func (d *decoder) Decode(bf *bufio.Reader) *load.Point {
 		lengthKey := binary.LittleEndian.Uint16(d.buf[:2])
 		lengthData := binary.LittleEndian.Uint16(d.buf[2:4])
 
-		total := lengthData + HeaderSize - 2
+		total := lengthData + 4
 		for d.len < total {
 			if n := d.Read(bf); n == 0 {
 				return nil
 			}
 		}
-		key := string(d.buf[4 : lengthKey+4])
+		fmt.Println(lengthKey)
+		key := string(name) + string(d.buf[4:lengthKey+4])
+		fmt.Println(total, d.len)
 		data[key] = d.buf[lengthKey+4 : total]
 
 		d.buf = d.buf[total:]
