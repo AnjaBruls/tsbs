@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"strconv"
 
 	"github.com/transceptor-technology/go-qpack"
@@ -46,7 +45,7 @@ func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
 
 		key := []byte("  Field: ")
 		key = append(key, p.fieldKeys[i]...)
-		fmt.Fprintf(os.Stderr, "key: %s\n", key) // int64????
+		// fmt.Fprintf(os.Stderr, "key: %s\n", key) // int64????
 		data, err := qpack.Pack([]interface{}{ts, value})
 		if err != nil {
 			log.Fatal(err)
