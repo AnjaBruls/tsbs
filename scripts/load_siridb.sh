@@ -17,7 +17,6 @@ DATABASE_PORT=${DATABASE_PORT:-9000}
 SIRIDB_SERVER_DIR=${SIRIDB_SERVER_DIR:-"/home/anja/workspace/siridb-server/Release/siridb-server"}
 DB_DIR=${DB_DIR:-"/home/anja/workspace/dbtest/siridb0.conf"}
 
-
 EXE_DIR=${EXE_DIR:-$(dirname $0)}
 source ${EXE_DIR}/load_common.sh
 
