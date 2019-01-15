@@ -28,8 +28,7 @@ done
 
 cat ${DATA_FILE} | gunzip | $EXE_FILE_NAME \
                                 --db-name=${DATABASE_NAME} \
-                                --host=${DATABASE_HOST} \
-                                --port=${DATABASE_PORT} \
+                                --hosts=${DATABASE_HOST}:${DATABASE_PORT} \
                                 --dbuser=${DATABASE_USER} \
                                 --dbpass=${DATABASE_PASS} \
                                 --workers=${NUM_WORKERS} \
