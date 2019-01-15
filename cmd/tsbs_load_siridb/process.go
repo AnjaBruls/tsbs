@@ -22,9 +22,9 @@ func (p *processor) Init(numWorker int, doLoad bool) {
 		listhosts := strings.Split(hosts, ",")
 
 		for _, hostport := range listhosts {
-			host_port := strings.Split(hostport, ":")
-			host := host_port[0]
-			port, err := strconv.ParseInt(host_port[1], 10, 0)
+			x := strings.Split(hostport, ":")
+			host := x[0]
+			port, err := strconv.ParseInt(x[1], 10, 0)
 			if err != nil {
 				log.Fatal(err)
 			}
