@@ -20,7 +20,7 @@ func (d *dbCreator) Init() {
 	d.hosts = strings.Split(host, ",")
 	d.ports = strings.Split(port, ",")
 	d.connection = make([]*siridb.Connection, 0)
-	for i, _ := range d.ports {
+	for i := range d.ports {
 		portInt64, err := strconv.ParseUint(d.ports[i], 10, 16)
 		if err != nil {
 			fatal(err)
@@ -40,7 +40,7 @@ func (d *dbCreator) DBExists(dbName string) bool {
 }
 
 func (d *dbCreator) RemoveOldDB(dbName string) error {
-	var msg error = errors.New("Database cannot be dropped. You need to stop the server and remove the database directory in your DBPATH.")
+	msg := errors.New("database cannot be dropped, you need to stop the server and remove the database directory in your DBPATH")
 	return msg
 }
 

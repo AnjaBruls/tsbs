@@ -22,7 +22,7 @@ func (p *processor) Init(numWorker int, doLoad bool) {
 		hosts := strings.Split(host, ",")
 		ports := strings.Split(port, ",")
 
-		for i, _ := range hosts {
+		for i := range hosts {
 			portInt64, err := strconv.ParseInt(ports[i], 10, 0)
 			if err != nil {
 				fatal(err)
