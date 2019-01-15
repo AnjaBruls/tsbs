@@ -31,7 +31,6 @@ const (
 var (
 	hosts        string
 	writeTimeout int
-	datapath     string
 	dbUser       string
 	dbPass       string
 	showExplain  bool
@@ -52,14 +51,12 @@ var (
 func init() {
 	runner = query.NewBenchmarkRunner()
 
-	flag.StringVar(&datapath, "datapath", "/tmp/bulk_queries/siridb-queries.gz", "Path to the zipped file in SiriDB format ")
 	flag.StringVar(&dbUser, "dbuser", "iris", "Username to enter SiriDB")
 	flag.StringVar(&dbPass, "dbpass", "siri", "Password to enter SiriDB")
 	flag.StringVar(&hosts, "hosts", "localhost:9000", "Comma separated list of SiriDB hosts in a cluster.")
-	flag.IntVar(&scale, "scale", 20, "Scaling variable (Must be the equal to the scalevar used for data generation).")
+	flag.IntVar(&scale, "scale", 8, "Scaling variable (Must be the equal to the scalevar used for data generation).")
 	flag.BoolVar(&createGroups, "create-groups", false, "Create groups of regular expressions to enhance performance")
 	flag.IntVar(&writeTimeout, "write-timeout", 10, "Write timeout.")
-
 	flag.BoolVar(&showExplain, "show-explain", false, "Print out the EXPLAIN output for sample query")
 
 	if showExplain {
@@ -69,9 +66,9 @@ func init() {
 	flag.Parse()
 
 	hostlist := [][]interface{}{}
-	listhostports := strings.Split(hosts, ",")
+	listhosts := strings.Split(hosts, ",")
 
-	for _, hostport := range listhostports {
+	for _, hostport := range listhosts {
 		host_port := strings.Split(hostport, ":")
 		host := host_port[0]
 		port, err := strconv.ParseInt(host_port[1], 10, 0)

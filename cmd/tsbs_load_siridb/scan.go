@@ -99,7 +99,7 @@ func (d *decoder) Decode(bf *bufio.Reader) *load.Point {
 		lengthKey := binary.LittleEndian.Uint16(d.buf[:2])
 		lengthData := binary.LittleEndian.Uint16(d.buf[2:4])
 
-		total := lengthData + 4
+		total := lengthData + lengthKey + 4
 		for d.len < total {
 			if n := d.Read(bf); n == 0 {
 				return nil
