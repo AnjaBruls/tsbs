@@ -10,7 +10,7 @@ import (
 	"github.com/transceptor-technology/go-qpack"
 )
 
-// TimescaleDBSerializer writes a Point in a serialized form for TimescaleDB
+// SiriDBSerializer writes a Point in a serialized form for TimescaleDB
 type SiriDBSerializer struct{}
 
 // Serialize writes Point p to the given Writer w, so it can be
@@ -21,23 +21,24 @@ type SiriDBSerializer struct{}
 // tags,<tag1>,<tag2>,<tag3>,...
 // <measurement>,<timestamp>,<field1>,<field2>,<field3>,...
 func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
-
-	// Tag row first, prefixed with name 'tags'
-	name := make([]byte, 4, 1024) // 512?
-
-	name = append(name, p.measurementName...)
-	name = append(name, '|')
+	line := make([]byte, 4, 8192)
+	line = append(line, p.measurementName...)
+	line = append(line, '|')
 	for i, v := range p.tagValues {
 		if i != 0 {
-			name = append(name, ',')
+			line = append(line, ',')
 		}
-		name = append(name, p.tagKeys[i]...)
-		name = append(name, '=')
-		name = append(name, v...)
+		line = append(line, p.tagKeys[i]...)
+		line = append(line, '=')
+		line = append(line, v...)
 	}
+
+	lenName := len(line) - 4
+
+	// Tag row first, prefixed with name 'tags'
 	var err error
 	metricCount := 0
-	var line []byte
+
 	for i, value := range p.fieldValues {
 		ts, _ := strconv.ParseInt(fmt.Sprintf("%d", p.timestamp.UTC().UnixNano()), 10, 64)
 
@@ -50,7 +51,7 @@ func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
 			log.Fatal(err)
 		}
 
-		binary.LittleEndian.PutUint16(key[0:], uint16(len(key)))
+		binary.LittleEndian.PutUint16(key[0:], uint16(len(key)-4))
 		binary.LittleEndian.PutUint16(key[2:], uint16(len(data)))
 
 		line = append(line, key...)
@@ -59,10 +60,8 @@ func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
 		metricCount++
 	}
 
-	binary.LittleEndian.PutUint16(name[0:], uint16(metricCount))
-	binary.LittleEndian.PutUint16(name[2:], uint16(len(name)))
-
-	line = append(name, line...)
+	binary.LittleEndian.PutUint16(line[0:], uint16(metricCount))
+	binary.LittleEndian.PutUint16(line[2:], uint16(lenName))
 
 	_, err = w.Write(line)
 	return err
