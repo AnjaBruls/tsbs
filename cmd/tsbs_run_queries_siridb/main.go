@@ -18,15 +18,6 @@ import (
 	"github.com/timescale/tsbs/query"
 )
 
-const (
-	account       = "sa"
-	password      = "siri"
-	timePrecision = "ns"
-	bufferSize    = 1024
-	durationNum   = "1w" // SHOULD BE SHORTER
-	durationLog   = "1d"
-)
-
 // Program option vars:
 var (
 	hosts        string
@@ -35,7 +26,6 @@ var (
 	dbPass       string
 	showExplain  bool
 	scale        int
-	createGroups bool
 )
 
 // Global vars:
@@ -44,7 +34,7 @@ var (
 )
 
 var (
-	siridb_connector *siridb.Client
+	siridbConnector *siridb.Client
 )
 
 // Parse args:
@@ -55,7 +45,6 @@ func init() {
 	flag.StringVar(&dbPass, "dbpass", "siri", "Password to enter SiriDB")
 	flag.StringVar(&hosts, "hosts", "localhost:9000", "Comma separated list of SiriDB hosts in a cluster.")
 	flag.IntVar(&scale, "scale", 8, "Scaling variable (Must be the equal to the scalevar used for data generation).")
-	flag.BoolVar(&createGroups, "create-groups", false, "Create groups of regular expressions to enhance performance")
 	flag.IntVar(&writeTimeout, "write-timeout", 10, "Write timeout.")
 	flag.BoolVar(&showExplain, "show-explain", false, "Print out the EXPLAIN output for sample query")
 
@@ -69,16 +58,16 @@ func init() {
 	listhosts := strings.Split(hosts, ",")
 
 	for _, hostport := range listhosts {
-		host_port := strings.Split(hostport, ":")
-		host := host_port[0]
-		port, err := strconv.ParseInt(host_port[1], 10, 0)
+		x := strings.Split(hostport, ":")
+		host := x[0]
+		port, err := strconv.ParseInt(x[1], 10, 0)
 		if err != nil {
 			log.Fatal(err)
 		}
 		hostlist = append(hostlist, []interface{}{host, int(port)})
 	}
 
-	siridb_connector = siridb.NewClient(
+	siridbConnector = siridb.NewClient(
 		dbUser,                // username
 		dbPass,                // password
 		runner.DatabaseName(), // database
@@ -88,13 +77,10 @@ func init() {
 }
 
 func main() {
-	siridb_connector.Connect()
-	if createGroups {
-		CreateGroups()
-		time.Sleep(3 * time.Second) // because the groups are created in a seperate thread every 2 seconds.
-	}
+	siridbConnector.Connect()
+	CreateGroups()
 	runner.Run(&query.SiriDBPool, newProcessor)
-	siridb_connector.Close()
+	siridbConnector.Close()
 }
 
 type queryExecutorOptions struct {
@@ -109,8 +95,9 @@ type processor struct {
 
 func newProcessor() query.Processor { return &processor{} }
 
-// regular expression can be put in a group in SiriDB to enhance peformance
+// CreateGroups makes groups representing regular expression to enhance peformance
 func CreateGroups() {
+	created := true
 	metrics := devops.GetAllCPUMetrics()
 	siriql := make([]string, 0, 2048)
 	for _, m := range metrics {
@@ -122,14 +109,17 @@ func CreateGroups() {
 	}
 	siriql = append(siriql, fmt.Sprintf("create group `cpu` for /.*(Measurement name: cpu).*/"))
 	for _, qry := range siriql {
-		if siridb_connector.IsConnected() {
-			if _, err := siridb_connector.Query(qry, uint16(writeTimeout)); err != nil {
-				fmt.Println(err)
+		if siridbConnector.IsConnected() {
+			if _, err := siridbConnector.Query(qry, uint16(writeTimeout)); err != nil {
+				created = false
 				break
 			}
 		} else {
 			log.Fatal("not even a single server is connected...")
 		}
+	}
+	if created {
+		time.Sleep(3 * time.Second) // because the groups are created in a seperate thread every 2 seconds.
 	}
 }
 
@@ -139,7 +129,6 @@ func (p *processor) Init(numWorker int) {
 		debug:         runner.DebugLevel() > 0,
 		printResponse: runner.DoPrintResponses(),
 	}
-
 }
 
 func (p *processor) ProcessQuery(q query.Query, isWarm bool) ([]*query.Stat, error) {
@@ -156,8 +145,8 @@ func (p *processor) ProcessQuery(q query.Query, isWarm bool) ([]*query.Stat, err
 	var res interface{}
 	var err error
 
-	if siridb_connector.IsConnected() {
-		if res, err = siridb_connector.Query(qry, uint16(writeTimeout)); err != nil {
+	if siridbConnector.IsConnected() {
+		if res, err = siridbConnector.Query(qry, uint16(writeTimeout)); err != nil {
 			log.Fatal(err)
 		}
 	} else {

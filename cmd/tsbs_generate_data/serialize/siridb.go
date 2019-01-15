@@ -23,12 +23,10 @@ type SiriDBSerializer struct{}
 func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
 
 	// Tag row first, prefixed with name 'tags'
-	name := make([]byte, 0, 1024) // 512?
+	name := make([]byte, 4, 1024) // 512?
 
-	name = append(name, []byte("Measurement name: ")...)
 	name = append(name, p.measurementName...)
-	name = append(name, ' ')
-	name = append(name, []byte("Tags: ")...)
+	name = append(name, '|')
 	for i, v := range p.tagValues {
 		if i != 0 {
 			name = append(name, ',')
@@ -39,40 +37,32 @@ func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
 	}
 	var err error
 	metricCount := 0
-	line := make([]byte, 0, 1024)
+	var line []byte
 	for i, value := range p.fieldValues {
 		ts, _ := strconv.ParseInt(fmt.Sprintf("%d", p.timestamp.UTC().UnixNano()), 10, 64)
 
-		key := []byte("  Field: ")
+		key := make([]byte, 5, 256)
+		key[4] = '|'
+
 		key = append(key, p.fieldKeys[i]...)
-		// fmt.Fprintf(os.Stderr, "key: %s\n", key) // int64????
 		data, err := qpack.Pack([]interface{}{ts, value})
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		line = append(data, line...)
-		line = append(key, line...)
+		binary.LittleEndian.PutUint16(key[0:], uint16(len(key)))
+		binary.LittleEndian.PutUint16(key[2:], uint16(len(data)))
 
-		lenData := make([]byte, 2)
-		binary.LittleEndian.PutUint16(lenData, uint16(len(data)))
-		line = append(lenData, line...)
-
-		lenKey := make([]byte, 2)
-		binary.LittleEndian.PutUint16(lenKey, uint16(len(key)))
-		line = append(lenKey, line...)
+		line = append(line, key...)
+		line = append(line, data...)
 
 		metricCount++
 	}
-	lenMetrics := make([]byte, 2)
-	binary.LittleEndian.PutUint16(lenMetrics, uint16(metricCount))
 
-	lenName := make([]byte, 2)
-	binary.LittleEndian.PutUint16(lenName, uint16(len(name)))
+	binary.LittleEndian.PutUint16(name[0:], uint16(metricCount))
+	binary.LittleEndian.PutUint16(name[2:], uint16(len(name)))
 
 	line = append(name, line...)
-	line = append(lenName, line...)
-	line = append(lenMetrics, line...)
 
 	_, err = w.Write(line)
 	return err
