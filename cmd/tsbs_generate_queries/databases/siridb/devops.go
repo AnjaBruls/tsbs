@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/timescale/tsbs/query"
 	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/uses/devops"
+	"github.com/timescale/tsbs/query"
 )
 
 // Devops produces SiriDB-specific queries for all the devops query types.
@@ -24,15 +24,6 @@ func (d *Devops) GenerateEmptyQuery() query.Query {
 	return query.NewSiriDB()
 }
 
-// func (d *Devops) getHostWhereWithHostnames(hostnames []string) string {
-// 	hostnameClauses := []string{}
-// 	for _, s := range hostnames {
-// 		hostnameClauses = append(hostnameClauses, fmt.Sprintf(".*(hostname=%s).*", s))
-// 	}
-// 	combinedHostnameClause := strings.Join(hostnameClauses, "|")
-// 	return "/" + combinedHostnameClause + "/"
-// }
-
 func (d *Devops) getHostWhereWithHostnames(hostnames []string) string {
 	hostnameClauses := []string{}
 	for _, s := range hostnames {
@@ -46,15 +37,6 @@ func (d *Devops) getHostWhereString(nhosts int) string {
 	hostnames := d.GetRandomHosts(nhosts)
 	return d.getHostWhereWithHostnames(hostnames)
 }
-
-// func (d *Devops) getMetricWhereString(metrics []string) string {
-// 	metricsClauses := []string{}
-// 	for _, s := range metrics {
-// 		metricsClauses = append(metricsClauses, fmt.Sprintf(".*(Field: %s$).*", s))
-// 	}
-// 	combinedMetricsClause := strings.Join(metricsClauses, "|")
-// 	return "/" + combinedMetricsClause + "/"
-// }
 
 func (d *Devops) getMetricWhereString(metrics []string) string {
 	metricsClauses := []string{}

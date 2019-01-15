@@ -19,15 +19,16 @@ type processor struct {
 func (p *processor) Init(numWorker int, doLoad bool) {
 	hostlist := [][]interface{}{}
 	if doLoad {
-		hosts := strings.Split(host, ",")
-		ports := strings.Split(port, ",")
+		listhosts := strings.Split(hosts, ",")
 
-		for i, _ := range hosts {
-			portInt64, err := strconv.ParseInt(ports[i], 10, 0)
+		for _, hostport := range listhosts {
+			host_port := strings.Split(hostport, ":")
+			host := host_port[0]
+			port, err := strconv.ParseInt(host_port[1], 10, 0)
 			if err != nil {
-				fatal(err)
+				log.Fatal(err)
 			}
-			hostlist = append(hostlist, []interface{}{hosts[i], int(portInt64)})
+			hostlist = append(hostlist, []interface{}{host, int(port)})
 		}
 
 		p.client = siridb.NewClient(

@@ -11,21 +11,21 @@ import (
 type dbCreator struct {
 	connection []*siridb.Connection
 	hosts      []string
-	ports      []string
 }
 
 // Init should set up any connection or other setup for talking to the DB, but should NOT create any databases
 func (d *dbCreator) Init() {
 
-	d.hosts = strings.Split(host, ",")
-	d.ports = strings.Split(port, ",")
+	d.hosts = strings.Split(hosts, ",")
 	d.connection = make([]*siridb.Connection, 0)
-	for i, _ := range d.ports {
-		portInt64, err := strconv.ParseUint(d.ports[i], 10, 16)
+	for _, hostport := range d.hosts {
+		host_port := strings.Split(hostport, ":")
+		host := host_port[0]
+		portInt64, err := strconv.ParseUint(host_port[1], 10, 16)
 		if err != nil {
 			fatal(err)
 		}
-		d.connection = append(d.connection, siridb.NewConnection(d.hosts[i], uint16(portInt64)))
+		d.connection = append(d.connection, siridb.NewConnection(host, uint16(portInt64)))
 	}
 }
 
@@ -58,11 +58,13 @@ func (d *dbCreator) CreateDB(dbName string) error {
 		return err
 	}
 
-	for i := 1; createNewPool && len(d.connection) > 1 && i < len(d.connection); i++ {
+	for i := 1; len(d.connection) > 1 && i < len(d.connection); i++ {
+		host_port := strings.Split(d.hosts[i], ":")
+
 		options2 := make(map[string]interface{})
 		options2["dbname"] = dbName
-		options2["host"] = d.hosts[0]
-		options2["port"] = d.ports[0]
+		options2["host"] = host_port[0]
+		options2["port"] = host_port[1]
 		options2["username"] = dbUser
 		options2["password"] = dbPass
 

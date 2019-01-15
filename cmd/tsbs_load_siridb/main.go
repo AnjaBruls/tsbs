@@ -19,17 +19,12 @@ const (
 
 // Program option vars:
 var (
-	host              string
-	port              string
-	replicationFactor int //???????????????????????
-	writeTimeout      int
-	datapath          string
-	dbUser            string
-	dbPass            string
-	logBatches        bool
-	dbpaths           string
-	createNewPool     bool
-	createReplica     bool
+	hosts        string
+	writeTimeout int
+	dbUser       string
+	dbPass       string
+	logBatches   bool
+	// createReplica     bool
 )
 
 // Global vars
@@ -43,21 +38,14 @@ var fatal = log.Fatal
 // Parse args:
 func init() {
 	loader = load.GetBenchmarkRunner()
-	flag.StringVar(&datapath, "datapath", "", "Path to the zipped file in SiriDB format ")
+
 	flag.StringVar(&dbUser, "dbuser", "iris", "Username to enter SiriDB")
 	flag.StringVar(&dbPass, "dbpass", "siri", "Password to enter SiriDB")
 
-	flag.StringVar(&dbpaths, "dbpaths", "", "Database paths")
+	// flag.BoolVar(&createReplica, "replica", false, "Whether to create a replica.")
 
-	flag.BoolVar(&createNewPool, "pool", false, "Whether to create a new pool.")
-
-	flag.BoolVar(&createReplica, "replica", false, "Whether to create a replica.")
-
-	flag.StringVar(&host, "host", "localhost", "Comma separated list of SiriDB hosts in a cluster.")
-	flag.StringVar(&port, "port", "9000", "Comma separated list of SiriDB ports in a cluster.")
+	flag.StringVar(&hosts, "hosts", "localhost:9000", "Comma separated list of SiriDB hosts in a cluster.")
 	flag.BoolVar(&logBatches, "log-batches", false, "Whether to time individual batches.")
-
-	flag.IntVar(&replicationFactor, "replication-factor", 1, "Number of nodes that must have a copy of each key.")
 	flag.IntVar(&writeTimeout, "write-timeout", 10, "Write timeout.")
 
 	flag.Parse()

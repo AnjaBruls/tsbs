@@ -55,7 +55,7 @@ func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
 		line = append(key, line...)
 
 		lenData := make([]byte, 2)
-		binary.LittleEndian.PutUint16(lenData, uint16(len(data)+len(key)))
+		binary.LittleEndian.PutUint16(lenData, uint16(len(data))
 		line = append(lenData, line...)
 
 		lenKey := make([]byte, 2)
