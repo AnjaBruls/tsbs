@@ -20,7 +20,6 @@ func (p *processor) Init(numWorker int, doLoad bool) {
 	hostlist := [][]interface{}{}
 	if doLoad {
 		listhosts := strings.Split(hosts, ",")
-
 		for _, hostport := range listhosts {
 			x := strings.Split(hostport, ":")
 			host := x[0]
