@@ -53,7 +53,7 @@ func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
 
 		preQpack := len(line)
 		ts, _ := strconv.ParseInt(fmt.Sprintf("%d", p.timestamp.UTC().UnixNano()), 10, 64)
-		err := qpack.PackTwo(&line, []interface{}{ts, value})
+		err := qpack.PackTo(&line, []interface{}{ts, value})
 		if err != nil {
 			log.Fatal(err)
 		}
