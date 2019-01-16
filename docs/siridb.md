@@ -51,23 +51,11 @@ Whether to time individual batches.
 #### `-dbuser` (type: `string`, default: `iris`)
 The database user to authenticate.
 
-
 #### `-dbpass` (type: `string`, default: `siri`)
 The database password to authenticate.
 
 #### `-hosts` (type: `string`, default: `localhost:9000`)
 A single hostname or comma separated list of host names for the SiriDB servers. Should included the port number.
-
-#### `-create-groups` (type: `boolean`, default: `false`)
-In the context of SiriDB a 'group' is basically a cached regular expression. Groups have to be created before the queries run. Groups are created for every host and every metric. We also create a group for all the cpu metrics combined.
-
-Example:
-```
-create group `usage_user` for /.*usage_user$/
-```
-
-So all the series that end their series name with 'usage_user' are included in this group.
-
 
 #### `-scale` (type: `int`, default: `8`)
 The scale is an important for creating the right groups. It is the number of hosts for which data is generated. So it should be the same as the scale (number of hosts) of the inserted data. This number is used to create a group for every host.
