@@ -55,7 +55,7 @@ func init() {
 	flag.StringVar(&dbPass, "dbpass", "siri", "Password to enter SiriDB")
 	flag.StringVar(&hosts, "hosts", "localhost:9000", "Comma separated list of SiriDB hosts in a cluster.")
 	flag.IntVar(&scale, "scale", 8, "Scaling variable (Must be the equal to the scalevar used for data generation).")
-	flag.BoolVar(&createGroups, "create-groups", false, "Create groups of regular expressions to enhance performance")
+	flag.BoolVar(&createGroups, "create-groups", true, "Create groups of regular expressions to enhance performance")
 	flag.IntVar(&writeTimeout, "write-timeout", 10, "Write timeout.")
 	flag.BoolVar(&showExplain, "show-explain", false, "Print out the EXPLAIN output for sample query")
 

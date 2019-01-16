@@ -11,7 +11,7 @@ if [[ -z "$EXE_FILE_NAME" ]]; then
 fi
 
 # Scale necessary to create groups in siridb
-SCALE=${SCALE:-"20"}
+SCALE=${SCALE:-"8"}
 
 # Queries folder
 BULK_DATA_DIR=${BULK_DATA_DIR:-"/tmp/bulk_queries"}
