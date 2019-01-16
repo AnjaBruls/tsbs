@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 
-	qpack "../../../../go-qpack"
+	qpack "github.com/transceptor-technology/go-qpack"
 )
 
 // SiriDBSerializer writes a Point in a serialized form for TimescaleDB
