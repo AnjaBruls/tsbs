@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"strconv"
 
 	qpack "github.com/transceptor-technology/go-qpack"
@@ -60,7 +59,6 @@ func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
 		postQpack := len(line)
 
 		binary.LittleEndian.PutUint16(line[indexLenData:], uint16(postQpack-preQpack))
-		fmt.Fprintf(os.Stderr, "%d\n", indexLenData)
 		metricCount++
 	}
 
