@@ -19,13 +19,13 @@ func (d *dbCreator) Init() {
 	d.hosts = strings.Split(hosts, ",")
 	d.connection = make([]*siridb.Connection, 0)
 	for _, hostport := range d.hosts {
-		host_port := strings.Split(hostport, ":")
-		host := host_port[0]
-		portInt64, err := strconv.ParseUint(host_port[1], 10, 16)
+		x := strings.Split(hostport, ":")
+		host := x[0]
+		port, err := strconv.ParseUint(x[1], 10, 16)
 		if err != nil {
 			fatal(err)
 		}
-		d.connection = append(d.connection, siridb.NewConnection(host, uint16(portInt64)))
+		d.connection = append(d.connection, siridb.NewConnection(host, uint16(port)))
 	}
 }
 
@@ -40,7 +40,7 @@ func (d *dbCreator) DBExists(dbName string) bool {
 }
 
 func (d *dbCreator) RemoveOldDB(dbName string) error {
-	var msg error = errors.New("Database cannot be dropped. You need to stop the server and remove the database directory in your DBPATH.")
+	msg := errors.New("database cannot be dropped, you need to stop the server and remove the database directory in your DBPATH")
 	return msg
 }
 
@@ -59,12 +59,12 @@ func (d *dbCreator) CreateDB(dbName string) error {
 	}
 
 	for i := 1; len(d.connection) > 1 && i < len(d.connection); i++ {
-		host_port := strings.Split(d.hosts[i], ":")
+		hostport := strings.Split(d.hosts[i], ":")
 
 		options2 := make(map[string]interface{})
 		options2["dbname"] = dbName
-		options2["host"] = host_port[0]
-		options2["port"] = host_port[1]
+		options2["host"] = hostport[0]
+		options2["port"] = hostport[1]
 		options2["username"] = dbUser
 		options2["password"] = dbPass
 

@@ -1,5 +1,23 @@
 #!/bin/bash
 
+mkdir /tmp/siridb/
+rm /tmp/siridb/dbpath/ -r
+mkdir /tmp/siridb/dbpath/
+
+cat <<EOT > /tmp/tsbs-siridb.conf
+[siridb]
+listen_client_port = 9000
+server_name = %HOSTNAME:9010
+ip_support = ALL
+optimize_interval = 900
+heartbeat_interval = 30
+default_db_path = /tmp/siridb/dbpath
+max_open_files = 512
+enable_shard_compression = 0
+enable_pipe_support = 0
+buffer_sync_interval = 500
+EOT
+
 # Ensure loader is available
 EXE_FILE_NAME=${EXE_FILE_NAME:-$(which tsbs_load_siridb)}
 if [[ -z "$EXE_FILE_NAME" ]]; then
@@ -14,8 +32,8 @@ DATA_FILE_NAME=${DATA_FILE_NAME:-siridb-data.gz}
 DATABASE_USER=${DATABASE_USER:-iris}
 DATABASE_PASS=${DATABASE_PASS:-siri}
 DATABASE_PORT=${DATABASE_PORT:-9000}
-SIRIDB_SERVER_DIR=${SIRIDB_SERVER_DIR:-"/home/anja/workspace/siridb-server/Release/siridb-server"}
-DB_DIR=${DB_DIR:-"/home/anja/workspace/dbtest/siridb0.conf"}
+SIRIDB_SERVER_DIR=${SIRIDB_SERVER_DIR:-"siridb-server -l error"}
+DB_DIR=${DB_DIR:-"/tmp/tsbs-siridb.conf"}
 
 EXE_DIR=${EXE_DIR:-$(dirname $0)}
 source ${EXE_DIR}/load_common.sh
