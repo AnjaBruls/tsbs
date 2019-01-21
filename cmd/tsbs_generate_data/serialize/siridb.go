@@ -21,7 +21,7 @@ type SiriDBSerializer struct{}
 // tags,<tag1>,<tag2>,<tag3>,...
 // <measurement>,<timestamp>,<field1>,<field2>,<field3>,...
 func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
-	line := make([]byte, 4, 8192)
+	line := make([]byte, 4, 1024)
 	line = append(line, p.measurementName...)
 	line = append(line, '|')
 	for i, v := range p.tagValues {
@@ -43,7 +43,7 @@ func (s *SiriDBSerializer) Serialize(p *Point, w io.Writer) error {
 
 		indexLenData := len(line) + 2
 
-		key := make([]byte, 5, 256)
+		key := make([]byte, 5, 32)
 		key[4] = '|'
 		key = append(key, p.fieldKeys[i]...)
 

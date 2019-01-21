@@ -45,4 +45,5 @@ cat ${DATA_FILE} | gunzip | $EXE_FILE_NAME \
                                 --partitions=${PARTITIONS} \
                                 --chunk-time=${CHUNK_TIME} \
                                 --write-profile=${PERF_OUTPUT} \
-                                --field-index-count=1
+                                --field-index-count=1 \
+                                --log-batches=false \
