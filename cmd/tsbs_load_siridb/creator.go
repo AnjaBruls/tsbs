@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -11,11 +12,11 @@ import (
 type dbCreator struct {
 	connection []*siridb.Connection
 	hosts      []string
+	replica    []string
 }
 
 // Init should set up any connection or other setup for talking to the DB, but should NOT create any databases
 func (d *dbCreator) Init() {
-
 	d.hosts = strings.Split(hosts, ",")
 	d.connection = make([]*siridb.Connection, 0)
 	for _, hostport := range d.hosts {
@@ -47,46 +48,53 @@ func (d *dbCreator) RemoveOldDB(dbName string) error {
 // CreateDB creates a database with the given name.
 func (d *dbCreator) CreateDB(dbName string) error {
 	defer d.Close()
-	options1 := make(map[string]interface{})
-	options1["dbname"] = dbName
-	options1["time_precision"] = timePrecision
-	options1["buffer_size"] = bufferSize
-	options1["duration_num"] = durationNum
-	options1["duration_log"] = durationLog
+	optionsNewDB := make(map[string]interface{})
+	optionsNewDB["dbname"] = dbName
+	optionsNewDB["time_precision"] = timePrecision
+	optionsNewDB["buffer_size"] = bufferSize
+	optionsNewDB["duration_num"] = durationNum
+	optionsNewDB["duration_log"] = durationLog
 
-	if _, err := d.connection[0].Manage(account, password, siridb.AdminNewDatabase, options1); err != nil {
+	if _, err := d.connection[0].Manage(account, password, siridb.AdminNewDatabase, optionsNewDB); err != nil {
 		return err
 	}
 
-	for i := 1; len(d.connection) > 1 && i < len(d.connection); i++ {
-		hostport := strings.Split(d.hosts[i], ":")
-
-		options2 := make(map[string]interface{})
-		options2["dbname"] = dbName
-		options2["host"] = hostport[0]
-		options2["port"] = hostport[1]
-		options2["username"] = dbUser
-		options2["password"] = dbPass
-
-		if _, err := d.connection[i].Manage(account, password, siridb.AdminNewPool, options2); err != nil {
-			return err
+	if len(d.hosts) == 2 {
+		h := strings.Split(d.hosts[0], ":")
+		host := h[0]
+		port, err := strconv.ParseUint(h[1], 10, 16)
+		if err != nil {
+			fatal(err)
 		}
+
+		if !replica {
+			optionsNewPool := make(map[string]interface{})
+			optionsNewPool["dbname"] = dbName
+			optionsNewPool["host"] = host
+			optionsNewPool["port"] = port
+			optionsNewPool["username"] = dbUser
+			optionsNewPool["password"] = dbPass
+
+			if _, err := d.connection[1].Manage(account, password, siridb.AdminNewPool, optionsNewPool); err != nil {
+				return err
+			}
+
+		} else {
+			optionsNewReplica := make(map[string]interface{})
+			optionsNewReplica["dbname"] = dbName
+			optionsNewReplica["host"] = host
+			optionsNewReplica["port"] = port
+			optionsNewReplica["username"] = dbUser
+			optionsNewReplica["password"] = dbPass
+			optionsNewReplica["pool"] = 0
+
+			if _, err := d.connection[1].Manage(account, password, siridb.AdminNewReplica, optionsNewReplica); err != nil {
+				return err
+			}
+		}
+	} else if len(d.hosts) > 2 {
+		fatal(fmt.Sprintf("You have provided %d hosts, but only 2 hosts are allowed", len(d.hosts)))
 	}
-
-	// if createReplica && len(d.connection) > 1 {
-	// 	options2 := make(map[string]interface{})
-	// 	options2["dbname"] = dbName
-	// 	options2["host"] = d.hosts[0]
-	// 	options2["port"] = d.ports[0]
-	// 	options2["username"] = dbUser
-	// 	options2["password"] = dbPass
-	// 	options2["pool"] = 0
-
-	// 	if _, err := d.connection[1].Manage(account, password, siridb.AdminNewReplica, options2); err != nil {
-	// 		return err
-	// 	}
-	// }
-
 	return nil
 }
 

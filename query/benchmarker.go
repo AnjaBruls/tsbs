@@ -2,7 +2,6 @@ package query
 
 import (
 	"bufio"
-	"compress/gzip"
 	"flag"
 	"fmt"
 	"log"
@@ -102,8 +101,7 @@ func (b *BenchmarkRunner) GetBufferedReader() *bufio.Reader {
 			if err != nil {
 				panic(fmt.Sprintf("cannot open file for read %s: %v", b.fileName, err))
 			}
-			filegzip, err := gzip.NewReader(file) // anja
-			b.br = bufio.NewReaderSize(filegzip, defaultReadSize)
+			b.br = bufio.NewReaderSize(file, defaultReadSize)
 		} else {
 			// Read from STDIN
 			b.br = bufio.NewReaderSize(os.Stdin, defaultReadSize)

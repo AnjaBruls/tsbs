@@ -79,6 +79,7 @@ func init() {
 func main() {
 	siridbConnector.Connect()
 	CreateGroups()
+
 	runner.Run(&query.SiriDBPool, newProcessor)
 	siridbConnector.Close()
 }

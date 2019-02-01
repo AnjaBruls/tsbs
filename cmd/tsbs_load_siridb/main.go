@@ -24,7 +24,7 @@ var (
 	dbUser       string
 	dbPass       string
 	logBatches   bool
-	// createReplica     bool
+	replica      bool
 )
 
 // Global vars
@@ -42,9 +42,9 @@ func init() {
 	flag.StringVar(&dbUser, "dbuser", "iris", "Username to enter SiriDB")
 	flag.StringVar(&dbPass, "dbpass", "siri", "Password to enter SiriDB")
 
-	// flag.BoolVar(&createReplica, "replica", false, "Whether to create a replica.")
+	flag.StringVar(&hosts, "hosts", "localhost:9000", "Provide 1 or 2 (comma seperated) SiriDB hosts. If 2 hosts are provided, 2 pools are created.")
+	flag.BoolVar(&replica, "replica", false, "Whether to create a replica instead of a second pool, when two hosts are provided.")
 
-	flag.StringVar(&hosts, "hosts", "localhost:9000", "Comma separated list of SiriDB hosts in a cluster.")
 	flag.BoolVar(&logBatches, "log-batches", false, "Whether to time individual batches.")
 	flag.IntVar(&writeTimeout, "write-timeout", 10, "Write timeout.")
 

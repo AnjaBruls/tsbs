@@ -7,6 +7,7 @@ rm /tmp/siridb/dbpath/ -r
 mkdir /tmp/siridb/dbpath/
 
 # Configuration of SiriDB
+# NOTE: only 1 SiriDB server can be started with this shell script.
 cat <<EOT > /tmp/tsbs-siridb.conf
 [siridb]
 listen_client_port = 9000
