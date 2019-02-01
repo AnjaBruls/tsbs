@@ -8,7 +8,7 @@ mkdir /tmp/siridb/dbpath/
 
 # Configuration of SiriDB
 # NOTE: only 1 SiriDB server can be started with this shell script.
-cat <<EOT > /tmp/tsbs-siridb.conf
+cat <<EOT > /tmp/siridb/tsbs-siridb.conf
 [siridb]
 listen_client_port = 9000
 server_name = %HOSTNAME:9010
@@ -37,7 +37,7 @@ DATABASE_USER=${DATABASE_USER:-iris}
 DATABASE_PASS=${DATABASE_PASS:-siri}
 DATABASE_PORT=${DATABASE_PORT:-9000}
 SIRIDB_SERVER_DIR=${SIRIDB_SERVER_DIR:-"siridb-server -l error"}
-DB_DIR=${DB_DIR:-"/tmp/tsbs-siridb.conf"}
+DB_DIR=${DB_DIR:-"/tmp/siridb/tsbs-siridb.conf"}
 
 EXE_DIR=${EXE_DIR:-$(dirname $0)}
 source ${EXE_DIR}/load_common.sh

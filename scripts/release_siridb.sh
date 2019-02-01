@@ -12,7 +12,7 @@ for i in $(seq 0 $END); do
 # And remove the old database if present.
 rm /tmp/siridb/dbpath$i/ -r
 mkdir /tmp/siridb/dbpath$i/
-`cat <<EOT > /tmp/tsbs-siridb$i.conf
+`cat <<EOT > /tmp/siridb/tsbs-siridb$i.conf
 [siridb]
 listen_client_port = 900$i
 server_name = %HOSTNAME:901$i
@@ -26,8 +26,8 @@ enable_pipe_support = 0
 buffer_sync_interval = 500
 EOT`
 
-SIRIDB_SERVER_DIR="siridb-server -l error"
-DB_DIR="/tmp/tsbs-siridb$i.conf"
+SIRIDB_SERVER_DIR="siridb-server -l debug"
+DB_DIR="/tmp/siridb/tsbs-siridb$i.conf"
 
 xterm -e ${SIRIDB_SERVER_DIR} -c ${DB_DIR} &
 done
