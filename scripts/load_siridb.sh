@@ -36,7 +36,7 @@ DATA_FILE_NAME=${DATA_FILE_NAME:-siridb-data.gz}
 DATABASE_USER=${DATABASE_USER:-iris}
 DATABASE_PASS=${DATABASE_PASS:-siri}
 DATABASE_PORT=${DATABASE_PORT:-9000}
-SIRIDB_SERVER_DIR=${SIRIDB_SERVER_DIR:-"siridb-server -l error"}
+SIRIDB_SERVER_DIR=${SIRIDB_SERVER_DIR:-"siridb-server -l debug"}
 DB_DIR=${DB_DIR:-"/tmp/siridb/tsbs-siridb.conf"}
 
 EXE_DIR=${EXE_DIR:-$(dirname $0)}

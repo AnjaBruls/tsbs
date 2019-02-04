@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/timescale/tsbs/load"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/timescale/tsbs/load"
 )
 
 const (
@@ -67,7 +67,7 @@ var fatal = log.Fatalf
 func init() {
 	loader = load.GetBenchmarkRunner()
 
-	flag.StringVar(&postgresConnect, "postgres", "host=postgres user=postgres password=JFWB", "PostgreSQL connection string")
+	flag.StringVar(&postgresConnect, "postgres", "sslmode=disable", "PostgreSQL connection string")
 	flag.StringVar(&host, "host", "localhost", "Hostname of TimescaleDB (PostgreSQL) instance")
 	flag.StringVar(&user, "user", "postgres", "User to connect to PostgreSQL as")
 

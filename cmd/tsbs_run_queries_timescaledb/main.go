@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/timescale/tsbs/query"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/timescale/tsbs/query"
 )
 
 // Program option vars:
@@ -36,7 +36,7 @@ func init() {
 	runner = query.NewBenchmarkRunner()
 	var hosts string
 
-	flag.StringVar(&postgresConnect, "postgres", "host=postgres user=postgres password=JFWB",
+	flag.StringVar(&postgresConnect, "postgres", "sslmode=disable",
 		"String of additional PostgreSQL connection parameters, e.g., 'sslmode=disable'. Parameters for host and database will be ignored.")
 	flag.StringVar(&hosts, "hosts", "localhost", "Comma separated list of PostgreSQL hosts (pass multiple values for sharding reads on a multi-node setup)")
 	flag.StringVar(&user, "user", "postgres", "User to connect to PostgreSQL as")

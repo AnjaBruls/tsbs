@@ -1,6 +1,7 @@
 # TSBS Supplemental Guide: SiriDB
 
-SiriDB is an open source time-series database with cluster support for scaling and redundancy. It is written in native C and the source code and documentation can be found on [Github](https://github.com/SiriDB/siridb-server).
+SiriDB is an open source time-series database with cluster support for scaling and redundancy. It is written in native C and the source code and documentation can be found on [Github](https://github.com/SiriDB/siridb-server). The [Go SiriDB Connector](https://github.com/SiriDB/go-siridb-connector) can be used to communicate with a single SiriDB server and a more advanced client is provided which can connect to multiple SiriDB servers so queries and inserts are balanced.
+
 This supplemental guide explains how the data generated for TSBS is stored, additional flags available when using the data importer (`tsbs_load_siridb`), and additional flags available for the query runner (`tsbs_run_queries_siridb`). **This should be read *after* the main README.**
 
 ## Data format
@@ -30,7 +31,7 @@ The database password to authenticate.
 
 
 #### `-hosts` (type: `string`, default: `localhost:9000`)
-The host name(s) of the SiriDB server(s). One or two hosts (comma separated) can be provided. Passing along two hosts will produce two pools if the replica flag is not set to `true`. Make sure you have set up the SiriDB server(s) and corresponding configuration file(s) in advance. Having two pools means that the time series are distributed over two servers. It is however possible to create more than 2 pools but SiriDB needs a moment to re-index the time series before another pool can be added. Therefore only a maximum of two hosts is supported in the benchmark suite.
+The host name(s) of the SiriDB server(s). One or two hosts (comma separated) can be provided. Passing along two hosts will produce two pools if the replica flag is not set to `true`. Make sure you have set up the SiriDB server(s) and corresponding configuration file(s) in advance. Having two pools means that the time series are distributed over two servers. It is however possible to create more than two pools but SiriDB needs a moment to re-index the time series before another pool can be added. Therefore only a maximum of two hosts is supported in the benchmark suite. If two hosts are provided two [single connections](https://github.com/SiriDB/go-siridb-connector) are made. When there is only one worker active, the insert request are send to one server. When there are two workers active the insert requests are balanced over both servers.
 
 
 #### `-replica` (type: `boolean`, default: `false`)
@@ -59,7 +60,7 @@ The database user to authenticate.
 The database password to authenticate.
 
 #### `-hosts` (type: `string`, default: `localhost:9000`)
-A single hostname or comma separated list of host names for the SiriDB servers. Should include the port number.
+A single host name or comma separated list of two host names for the SiriDB servers. When two hosts are provided the [SiriDB client](https://github.com/SiriDB/go-siridb-connector) will balance the queries over both servers if it concerns two pools. In case of one pool where the second host is a replica the client will only send the query requests to one server.
 
 #### `-scale` (type: `int`, default: `8`)
 The scale is important for creating the right groups within SiriDB. It is the number of hosts for which data has been generated. So it should be the same as the scale (number of hosts) of the inserted data. This number is used to create a group for every host.

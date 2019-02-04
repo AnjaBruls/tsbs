@@ -120,7 +120,7 @@ func CreateGroups() {
 		}
 	}
 	if created {
-		time.Sleep(3 * time.Second) // because the groups are created in a seperate thread every 2 seconds.
+		time.Sleep(6 * time.Second) // because the groups are created in a seperate thread every 2 seconds.
 	}
 }
 

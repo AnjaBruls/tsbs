@@ -30,6 +30,7 @@ func (p *processor) Init(numWorker int, doLoad bool) {
 
 func (p *processor) Close(doLoad bool) {
 	if doLoad {
+		fmt.Println("anja")
 		p.connection.Close()
 	}
 }

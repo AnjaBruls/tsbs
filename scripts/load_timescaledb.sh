@@ -30,7 +30,7 @@ while ! pg_isready -h ${DATABASE_HOST}; do
 done
 
 cat ${DATA_FILE} | gunzip | $EXE_FILE_NAME \
-                                --postgres="host=postgres user=postgres password=JFWB" \
+                                --postgres="sslmode=disable" \
                                 --db-name=${DATABASE_NAME} \
                                 --host=${DATABASE_HOST} \
                                 --user=${DATABASE_USER} \
@@ -45,5 +45,4 @@ cat ${DATA_FILE} | gunzip | $EXE_FILE_NAME \
                                 --partitions=${PARTITIONS} \
                                 --chunk-time=${CHUNK_TIME} \
                                 --write-profile=${PERF_OUTPUT} \
-                                --field-index-count=1 \
-                                --log-batches=false \
+                                --field-index-count=1
