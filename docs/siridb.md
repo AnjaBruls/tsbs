@@ -14,7 +14,7 @@ The serialized format is not (easily) human readable, but one line can be descri
 <number of metrics> <length of name and tags> <name and tags> <length of field key_1> <length of timestamp_1 and field value_1> <field key_1> <packed timestamp_1 and value_1> <length of field key_2> <length of timestamp_1 and field value_2> <field key_2> <packed timestamp_1 and value_2>... etc.
 
 ```
-The measurement name, tags and field key will compose the SiriDB series name when the data is inserted. The timestamp and field value are packed with [go-qpack](https://github.com/transceptor-technology/go-qpack). Go-qpack serializes the data in the right format for SiriDB.
+The measurement name, tags and field key will compose the SiriDB series name when the data is inserted. The timestamp and field value are packed with [Go-QPack](https://github.com/transceptor-technology/go-qpack). Go-QPack serializes the data in the right format for SiriDB.
 
 ---
 
@@ -32,7 +32,7 @@ The database password to authenticate.
 
 
 #### `-hosts` (type: `string`, default: `localhost:9000`)
-The host name(s) of the SiriDB server(s). One or two hosts (comma separated) can be provided. Passing along two hosts will produce two pools if the replica flag is not set to `true`. Make sure you have set up the SiriDB server(s) and corresponding configuration file(s) in advance. Having two pools means that the time series are distributed over two servers. It is however possible to create more than two pools but SiriDB needs a moment to re-index the time series before another pool can be added. Therefore only a maximum of two hosts is supported in the benchmark suite. If two hosts are provided two [single connections](https://github.com/SiriDB/go-siridb-connector#single-connection) are made. When there is only one worker active, the insert requests are sent to one server. When there are two workers active the insert requests are balanced over both servers.
+The host name(s) of the SiriDB server(s). One or two hosts (comma separated) can be provided. Passing along two hosts will produce two pools if the replica flag is set to `false`. Make sure you have set up the SiriDB server(s) and corresponding configuration file(s) in advance. Having two pools means that the time series are distributed over two servers. It is however possible to create more than two pools, but SiriDB needs a moment to re-index the time series before another pool can be added. Therefore only a maximum of two hosts is supported in the benchmark suite. If two hosts are provided, two [single connections](https://github.com/SiriDB/go-siridb-connector#single-connection) are made. When there is only one worker active, the insert requests are sent to one server. When there are two workers active the insert requests are balanced over both servers.
 
 
 #### `-replica` (type: `boolean`, default: `false`)
@@ -61,7 +61,7 @@ The database user to authenticate.
 The database password to authenticate.
 
 #### `-hosts` (type: `string`, default: `localhost:9000`)
-A single host name or comma separated list of two host names for the SiriDB server(s). When you have two pools the [SiriDB client](https://github.com/SiriDB/go-siridb-connector#siridb-client) will balance the queries over both servers. In case of one pool where the second host is a replica the client will send the query requests to only one server.
+A single host name or comma separated list of two host names for the SiriDB server(s). When you have two pools the [SiriDB client](https://github.com/SiriDB/go-siridb-connector#siridb-client) will balance the queries over both servers. In case of one pool where the second host is a replica, the client will send the query requests to only one server.
 
 #### `-scale` (type: `int`, default: `8`)
 The scale is important for creating the right groups within SiriDB. It is the number of hosts for which data has been generated. So it should be the same as the scale (number of hosts) of the inserted data. This number is used to create a group for every host.
