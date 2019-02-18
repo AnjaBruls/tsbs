@@ -324,7 +324,7 @@ func getSerializer(sim common.Simulator, format string, out *bufio.Writer) seria
 		fallthrough
 	case formatTimescaleDB:
 		out.WriteString("tags")
-		for _, key := range devops.MachineTagKeys {
+		for _, key := range sim.TagKeys() {
 			out.WriteString(",")
 			out.Write(key)
 		}
