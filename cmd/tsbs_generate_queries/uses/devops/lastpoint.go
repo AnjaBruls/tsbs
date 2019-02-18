@@ -1,8 +1,8 @@
 package devops
 
 import (
-	"github.com/timescale/tsbs/query"
 	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/utils"
+	"github.com/timescale/tsbs/query"
 )
 
 // LastPointPerHost returns QueryFiller for the devops lastpoint case

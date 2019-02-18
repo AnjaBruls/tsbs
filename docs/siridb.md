@@ -63,7 +63,7 @@ The database password to authenticate.
 #### `-hosts` (type: `string`, default: `localhost:9000`)
 A single host name or comma separated list of two host names for the SiriDB server(s). When you have two pools the [SiriDB client](https://github.com/SiriDB/go-siridb-connector#siridb-client) will balance the queries over both servers. In case of one pool where the second host is a replica, the client will send the query requests to only one server.
 
-#### `-scale` (type: `int`, default: `8`)
+#### `-scale` (type: `uint64`, default: `8`)
 The scale is important for creating the right groups within SiriDB. It is the number of hosts for which data has been generated. So it should be the same as the scale (number of hosts) of the inserted data. This number is used to create a group for every host.
 
 #### `-write-timeout` (type: `int`, default: `10`)

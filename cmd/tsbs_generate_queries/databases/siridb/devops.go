@@ -49,15 +49,19 @@ func (d *Devops) getMetricWhereString(metrics []string) string {
 
 const goTimeFmt = "2006-01-02 15:04:05Z"
 
-// GroupByTime selects the MAX for numMetrics metrics under 'cpu',
+// GroupByTime selects the MAX for numMetrics metrics in the group `cpu`,
 // per minute for nhosts hosts,
-// e.g. in psuedo-SQL:
+// e.g. in pseudo-SQL:
 //
-// SELECT minute, max(metric1), ..., max(metricN)
-// FROM cpu
-// WHERE (hostname = '$HOSTNAME_1' OR ... OR hostname = '$HOSTNAME_N')
-// AND time >= '$HOUR_START' AND time < '$HOUR_END'
-// GROUP BY minute ORDER BY minute ASC
+// In case of 1 metric:
+// select max(1m) from (`groupHost1` | ...) & `groupMetric1` between 'time1' and 'time2' merge as 'max METRIC for (HOST | ... ) using max(1)
+//
+// In case of multiple metrics
+// NOTE: it is not possible to merge multiple hosts per metric for a list of
+// metrics, only for one metric. In this case all series for the provided hosts
+// and metrics are returned:
+//
+// select max(1m) from (`groupHost1` | ...) & (`groupMetric1` | ...) between 'time1' and 'time2'
 func (d *Devops) GroupByTime(qi query.Query, nHosts, numMetrics int, timeRange time.Duration) {
 	interval := d.Interval.RandWindow(timeRange)
 	metrics := devops.GetCPUMetricsSlice(numMetrics)
@@ -66,34 +70,36 @@ func (d *Devops) GroupByTime(qi query.Query, nHosts, numMetrics int, timeRange t
 
 	humanLabel := fmt.Sprintf("SiriDB %d cpu metric(s), random %4d hosts, random %s by 1m", numMetrics, nHosts, timeRange)
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.StartString())
-	siriql := fmt.Sprintf("select max(1m) from %s & %s between '%s' and '%s' merge as 'max grouped by host, metric and time' using max(1)", whereHosts, whereMetrics, interval.StartString(), interval.EndString())
+
+	var siriql string
+	if numMetrics == 1 {
+		siriql = fmt.Sprintf("select max(1m) from %s & %s between '%s' and '%s' merge as 'max %s for %s' using max(1)", whereHosts, whereMetrics, interval.StartString(), interval.EndString(), whereMetrics, whereHosts)
+	} else {
+		siriql = fmt.Sprintf("select max(1m) from %s & %s between '%s' and '%s'", whereHosts, whereMetrics, interval.StartString(), interval.EndString())
+	}
 	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
 }
 
 // GroupByOrderByLimit populates a query.Query that has a time WHERE clause, that groups by a truncated date, orders by that date, and takes a limit:
-// SELECT time_bucket('1 minute', time) AS t, MAX(cpu) FROM cpu
-// WHERE time < '$TIME'
-// GROUP BY t ORDER BY t DESC
-// LIMIT $LIMIT
+//
+// select max(1m) from `usage_user` between time - 5m and 'roundedTime' merge as 'max usage user of the last 5 aggregate readings' using max(1)
 func (d *Devops) GroupByOrderByLimit(qi query.Query) {
 	interval := d.Interval.RandWindow(time.Hour)
 	timeStr := interval.End.Format(goTimeFmt)
 
-	where := fmt.Sprintf("between '%s' - 5m and '%s'", timeStr, timeStr)
-	siriql := fmt.Sprintf("select max(1m) from `cpu` %s", where)
+	timestrRounded := timeStr[:len(timeStr)-4] + ":00Z"
+	where := fmt.Sprintf("between '%s' - 5m and '%s'", timeStr, timestrRounded)
+	siriql := fmt.Sprintf("select max(1m) from `usage_user` %s merge as 'max usage user of the last 5 aggregate readings' using max(1)", where)
 
 	humanLabel := "SiriDB max cpu over last 5 min-intervals (random end)"
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.EndString())
 	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
 }
 
-// GroupByTimeAndPrimaryTag selects the AVG of numMetrics metrics under 'cpu' per device per hour for a day,
-// e.g. in psuedo-SQL:
+// GroupByTimeAndPrimaryTag selects the AVG of numMetrics metrics in the group `cpu` per device per hour for a day,
+// e.g. in pseudo-SQL:
 //
-// SELECT AVG(metric1), ..., AVG(metricN)
-// FROM cpu
-// WHERE time >= '$HOUR_START' AND time < '$HOUR_END'
-// GROUP BY hour, hostname ORDER BY hour
+// select mean(1h) from (`groupMetric1` | ...) between 'time1' and 'time2'
 func (d *Devops) GroupByTimeAndPrimaryTag(qi query.Query, numMetrics int) {
 	interval := d.Interval.RandWindow(devops.DoubleGroupByDuration)
 	metrics := devops.GetCPUMetricsSlice(numMetrics)
@@ -101,30 +107,33 @@ func (d *Devops) GroupByTimeAndPrimaryTag(qi query.Query, numMetrics int) {
 
 	humanLabel := devops.GetDoubleGroupByLabel("SiriDB", numMetrics)
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.StartString())
-	siriql := fmt.Sprintf("select mean(1h) from %s between '%s'  and '%s' ", whereMetrics, interval.StartString(), interval.EndString())
+	siriql := fmt.Sprintf("select mean(1h) from %s between '%s' and '%s'", whereMetrics, interval.StartString(), interval.EndString())
 	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
 }
 
-// MaxAllCPU selects the MAX of all metrics under 'cpu' per hour for nhosts hosts,
-// e.g. in psuedo-SQL:
+// MaxAllCPU selects the MAX of all metrics in the group `cpu` per hour for nhosts hosts,
+// e.g. in pseudo-SQL:
 //
-// SELECT MAX(metric1), ..., MAX(metricN)
-// FROM cpu WHERE (hostname = '$HOSTNAME_1' OR ... OR hostname = '$HOSTNAME_N')
-// AND time >= '$HOUR_START' AND time < '$HOUR_END'
-// GROUP BY hour ORDER BY hour
+// NOTE: it is not possible to merge multiple hosts per metric for a list of
+// metrics, only for one metric. In this case all series for the provided
+// hosts and all `cpu` metrics are returned):
+//
+// select max(1h) from (`groupHost1` | ...) & `cpu` between 'time1' and 'time2'
 func (d *Devops) MaxAllCPU(qi query.Query, nHosts int) {
 	interval := d.Interval.RandWindow(devops.MaxAllDuration)
 
-	whereMetrics := "`cpu`" ////////////////////////////////// CHANGE TO GROUP
+	whereMetrics := "`cpu`"
 	whereHosts := d.getHostWhereString(nHosts)
 
 	humanLabel := devops.GetMaxAllLabel("SiriDB", nHosts)
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.StartString())
-	siriql := fmt.Sprintf("select max(1h) from %s & %s between '%s'  and '%s' merge as 'max cpu per hour' using max(1)", whereHosts, whereMetrics, interval.StartString(), interval.EndString())
+	siriql := fmt.Sprintf("select max(1h) from %s & %s between '%s' and '%s'", whereHosts, whereMetrics, interval.StartString(), interval.EndString())
 	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
 }
 
-// LastPointPerHost finds the last row for every host in the dataset
+// LastPointPerHost finds the last value of every time serie within the CPU group.
+//
+// select last() from `cpu`
 func (d *Devops) LastPointPerHost(qi query.Query) {
 	siriql := "select last() from `cpu`"
 	humanLabel := "SiriDB last row per host"
@@ -134,12 +143,15 @@ func (d *Devops) LastPointPerHost(qi query.Query) {
 
 // HighCPUForHosts populates a query that gets CPU metrics when the CPU has high
 // usage between a time period for a number of hosts (if 0, it will search all hosts),
-// e.g. in psuedo-SQL:
+// e.g. in pseudo-SQL:
 //
-// SELECT * FROM cpu
-// WHERE usage_user > 90.0
-// AND time >= '$TIME_START' AND time < '$TIME_END'
-// AND (hostname = '$HOST' OR hostname = '$HOST2'...)
+// NOTE: It is not possible to return the other cpu metrics when e.g. usage_user
+// has reached a threshold. Here only the metric "usage_user" is returned.
+//
+// nHosts=0:
+// select filter(> 90) from `usage_user` between 'time1' and 'time2'
+// nHosts>0:
+// select filter(> 90) from `usage_user` & (`groupHost1` | ...) between 'time1' and 'time2'
 func (d *Devops) HighCPUForHosts(qi query.Query, nHosts int) {
 	var whereHosts string
 	if nHosts == 0 {
@@ -149,9 +161,9 @@ func (d *Devops) HighCPUForHosts(qi query.Query, nHosts int) {
 	}
 	interval := d.Interval.RandWindow(devops.HighCPUDuration)
 
-	humanLabel := devops.GetHighCPULabel("Influx", nHosts)
+	humanLabel := devops.GetHighCPULabel("SiriDB", nHosts)
 	humanDesc := fmt.Sprintf("%s: %s", humanLabel, interval.StartString())
-	siriql := fmt.Sprintf("select filter(> 90) from `usage_user` %s between '%s' and '%s' ", whereHosts, interval.StartString(), interval.EndString())
+	siriql := fmt.Sprintf("select filter(> 90) from `usage_user` %s between '%s' and '%s'", whereHosts, interval.StartString(), interval.EndString())
 	d.fillInQuery(qi, humanLabel, humanDesc, siriql)
 }
 

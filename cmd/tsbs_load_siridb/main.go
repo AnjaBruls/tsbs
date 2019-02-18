@@ -8,15 +8,6 @@ import (
 	"github.com/timescale/tsbs/load"
 )
 
-const (
-	account       = "sa"
-	password      = "siri"
-	timePrecision = "ns"
-	bufferSize    = 1024
-	durationNum   = "1w" // SHOULD BE SHORTER
-	durationLog   = "1d"
-)
-
 // Program option vars:
 var (
 	hosts        string

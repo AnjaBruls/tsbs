@@ -15,7 +15,7 @@ type point struct {
 }
 
 type batch struct {
-	series    map[string][]byte // series    []byte
+	series    map[string][]byte
 	batchCnt  int
 	metricCnt uint64
 }
@@ -40,7 +40,7 @@ type factory struct{}
 
 func (f *factory) New() load.Batch {
 	return &batch{
-		series:    map[string][]byte{}, // []byte{byte(253)},
+		series:    map[string][]byte{},
 		batchCnt:  0,
 		metricCnt: 0,
 	}
@@ -48,7 +48,7 @@ func (f *factory) New() load.Batch {
 
 type decoder struct {
 	buf []byte
-	len uint16
+	len uint32
 }
 
 func (d *decoder) Read(bf *bufio.Reader) int {
@@ -61,22 +61,22 @@ func (d *decoder) Read(bf *bufio.Reader) int {
 		log.Fatal(err.Error())
 	}
 
-	d.len += uint16(n)
+	d.len += uint32(n)
 	d.buf = append(d.buf, buf[:n]...)
 	return n
 }
 
 func (d *decoder) Decode(bf *bufio.Reader) *load.Point {
-	if d.len < 4 {
+	if d.len < 8 {
 		if n := d.Read(bf); n == 0 {
 			return nil
 		}
 	}
-	valueCnt := binary.LittleEndian.Uint16(d.buf[:2])
-	nameCnt := binary.LittleEndian.Uint16(d.buf[2:4])
+	valueCnt := binary.LittleEndian.Uint32(d.buf[:4])
+	nameCnt := binary.LittleEndian.Uint32(d.buf[4:8])
 
-	d.buf = d.buf[4:]
-	d.len -= 4
+	d.buf = d.buf[8:]
+	d.len -= 8
 
 	if d.len < nameCnt {
 		if n := d.Read(bf); n == 0 {
@@ -90,24 +90,24 @@ func (d *decoder) Decode(bf *bufio.Reader) *load.Point {
 	d.len -= nameCnt
 
 	data := make(map[string][]byte)
-	for i := 0; uint16(i) < valueCnt; i++ {
-		if d.len < 4 {
+	for i := 0; uint32(i) < valueCnt; i++ {
+		if d.len < 8 {
 			if n := d.Read(bf); n == 0 {
 				return nil
 			}
 		}
-		lengthKey := binary.LittleEndian.Uint16(d.buf[:2])
-		lengthData := binary.LittleEndian.Uint16(d.buf[2:4])
+		lengthKey := binary.LittleEndian.Uint32(d.buf[:4])
+		lengthData := binary.LittleEndian.Uint32(d.buf[4:8])
 
-		total := lengthData + lengthKey + 4
+		total := lengthData + lengthKey + 8
 		for d.len < total {
 			if n := d.Read(bf); n == 0 {
 				return nil
 			}
 		}
 
-		key := string(name) + string(d.buf[4:lengthKey+4])
-		data[key] = d.buf[lengthKey+4 : total]
+		key := string(name) + string(d.buf[8:lengthKey+8])
+		data[key] = d.buf[lengthKey+8 : total]
 
 		d.buf = d.buf[total:]
 		d.len -= total

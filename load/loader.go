@@ -147,7 +147,6 @@ func (l *BenchmarkRunner) GetBufferedReader() *bufio.Reader {
 				return nil
 			}
 			l.br = bufio.NewReaderSize(file, defaultReadSize)
-
 		} else {
 			// Read from STDIN
 			l.br = bufio.NewReaderSize(os.Stdin, defaultReadSize)
@@ -189,7 +188,6 @@ func (l *BenchmarkRunner) useDBCreator(dbc DBCreator) func() {
 				}
 			}
 			err := dbc.CreateDB(l.dbName)
-
 			if err != nil {
 				panic(err)
 			}

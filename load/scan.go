@@ -156,7 +156,6 @@ func scanWithIndexer(channels []*duplexChannel, batchSize uint, limit uint64, br
 
 		// Prepare new batch - decode new item and append it to batch
 		item := decoder.Decode(br)
-
 		if item == nil {
 			// Nothing to scan any more - input is empty or failed
 			// Time to exit

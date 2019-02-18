@@ -149,7 +149,7 @@ func (d *Devops) GroupByTimeAndPrimaryTag(qi query.Query, numMetrics int) {
             hour,
             %s,
             %s
-        FROM
+        FROM 
         (
             SELECT
                 toStartOfHour(created_at) AS hour,
@@ -161,7 +161,7 @@ func (d *Devops) GroupByTimeAndPrimaryTag(qi query.Query, numMetrics int) {
                 hour,
                 id
         ) AS cpu_avg
-        %s
+        %s 
         ORDER BY
             hour ASC,
             %s
@@ -255,8 +255,8 @@ func (d *Devops) LastPointPerHost(qi query.Query) {
             FROM
             (
                 SELECT *
-                FROM cpu
-                WHERE (tags_id, created_at) IN
+                FROM cpu 
+                WHERE (tags_id, created_at) IN 
                 (
                     SELECT
                         tags_id,

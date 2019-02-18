@@ -149,6 +149,7 @@ func (b *BenchmarkRunner) Run(queryPool *sync.Pool, processorCreateFn ProcessorC
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	// (Optional) create a memory profile:
 	if len(b.memProfile) > 0 {
 		f, err := os.Create(b.memProfile)

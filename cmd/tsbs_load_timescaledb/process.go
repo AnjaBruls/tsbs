@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/timescale/tsbs/load"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+	"github.com/timescale/tsbs/load"
 )
 
 const insertCSI = `INSERT INTO %s(time,tags_id,%s%s,additional_tags) VALUES %s`
@@ -145,7 +145,6 @@ func (p *processor) processCSI(hypertable string, rows []*insertData) uint64 {
 	}
 
 	// Check if any of these tags has yet to be inserted
-
 	newTags := make([][]string, 0, len(rows))
 	p.csi.mutex.RLock()
 	for _, cols := range tagRows {
@@ -177,7 +176,6 @@ func (p *processor) processCSI(hypertable string, rows []*insertData) uint64 {
 		cols = append(cols, tableCols["tags"][0])
 	}
 	cols = append(cols, tableCols[hypertable]...)
-
 	stmt, err := tx.Prepare(pq.CopyIn(hypertable, cols...))
 	for _, r := range dataRows {
 		stmt.Exec(r...)

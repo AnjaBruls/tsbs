@@ -25,7 +25,7 @@ var (
 	dbUser       string
 	dbPass       string
 	showExplain  bool
-	scale        int
+	scale        uint64
 )
 
 // Global vars:
@@ -44,15 +44,15 @@ func init() {
 	flag.StringVar(&dbUser, "dbuser", "iris", "Username to enter SiriDB")
 	flag.StringVar(&dbPass, "dbpass", "siri", "Password to enter SiriDB")
 	flag.StringVar(&hosts, "hosts", "localhost:9000", "Comma separated list of SiriDB hosts in a cluster.")
-	flag.IntVar(&scale, "scale", 8, "Scaling variable (Must be the equal to the scalevar used for data generation).")
+	flag.Uint64Var(&scale, "scale", 8, "Scaling variable (Must be the equal to the scalevar used for data generation).")
 	flag.IntVar(&writeTimeout, "write-timeout", 10, "Write timeout.")
 	flag.BoolVar(&showExplain, "show-explain", false, "Print out the EXPLAIN output for sample query")
+
+	flag.Parse()
 
 	if showExplain {
 		runner.SetLimit(1)
 	}
-
-	flag.Parse()
 
 	hostlist := [][]interface{}{}
 	listhosts := strings.Split(hosts, ",")
@@ -96,7 +96,7 @@ type processor struct {
 
 func newProcessor() query.Processor { return &processor{} }
 
-// CreateGroups makes groups representing regular expression to enhance peformance
+// CreateGroups makes groups representing regular expression to enhance performance
 func CreateGroups() {
 	created := true
 	metrics := devops.GetAllCPUMetrics()
@@ -104,7 +104,9 @@ func CreateGroups() {
 	for _, m := range metrics {
 		siriql = append(siriql, fmt.Sprintf("create group `%s` for /.*%s$/", m, m))
 	}
-	for n := 0; n < scale; n++ {
+
+	var n uint64
+	for n = 0; n < scale; n++ {
 		host := fmt.Sprintf("host_%d", n)
 		siriql = append(siriql, fmt.Sprintf("create group `%s` for /.*%s,.*/", host, host))
 	}
@@ -113,7 +115,6 @@ func CreateGroups() {
 		if siridbConnector.IsConnected() {
 			if _, err := siridbConnector.Query(qry, uint16(writeTimeout)); err != nil {
 				created = false
-				break
 			}
 		} else {
 			log.Fatal("not even a single server is connected...")

@@ -30,7 +30,6 @@ func (p *processor) Init(numWorker int, doLoad bool) {
 
 func (p *processor) Close(doLoad bool) {
 	if doLoad {
-		fmt.Println("anja")
 		p.connection.Close()
 	}
 }
@@ -42,9 +41,9 @@ func (p *processor) ProcessBatch(b load.Batch, doLoad bool) (metricCount, rows u
 			fatal(err)
 		}
 		series := make([]byte, 0)
-		series = append(series, byte(253)) // qpack: open map
+		series = append(series, byte(253)) // qpack: "open map"
 		for k, v := range batch.series {
-			key, err := qpack.Pack(k)
+			key, err := qpack.Pack(k) // packs a string in the right format for SiriDB
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -63,7 +62,7 @@ func (p *processor) ProcessBatch(b load.Batch, doLoad bool) (metricCount, rows u
 		}
 	}
 	metricCount = uint64(batch.metricCnt)
-	batch.series = map[string][]byte{} // []byte{byte(253)},
+	batch.series = map[string][]byte{}
 	batch.batchCnt = 0
 	batch.metricCnt = 0
 	return metricCount, 0

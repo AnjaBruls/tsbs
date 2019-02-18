@@ -83,10 +83,10 @@ func (d *decoder) Decode(_ *bufio.Reader) *load.Point {
 		fatal("scan error: %v", d.scanner.Err())
 		return nil
 	}
-
 	parts = strings.SplitN(d.scanner.Text(), ",", 2) // prefix & then rest of line
 	prefix = parts[0]
 	data.fields = parts[1]
+
 	return load.NewPoint(&point{
 		hypertable: prefix,
 		row:        data,

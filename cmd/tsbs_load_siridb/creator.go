@@ -9,6 +9,15 @@ import (
 	siridb "github.com/SiriDB/go-siridb-connector"
 )
 
+const (
+	account       = "sa"
+	password      = "siri"
+	timePrecision = "ns"
+	bufferSize    = 1024
+	durationNum   = "1w"
+	durationLog   = "1d"
+)
+
 type dbCreator struct {
 	connection []*siridb.Connection
 	hosts      []string

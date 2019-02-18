@@ -100,7 +100,7 @@ func TestSiriDBSerializerSerialize(t *testing.T) {
 
 type decoder struct {
 	buf []byte
-	len uint16
+	len uint32
 }
 
 func (d *decoder) Read(bf *bufio.Reader) int {
@@ -113,22 +113,22 @@ func (d *decoder) Read(bf *bufio.Reader) int {
 		log.Fatal(err.Error())
 	}
 
-	d.len += uint16(n)
+	d.len += uint32(n)
 	d.buf = append(d.buf, buf[:n]...)
 	return n
 }
 
 func (d *decoder) deSerializeSiriDB(bf *bufio.Reader) ([]string, [][]byte) {
-	if d.len < 4 {
+	if d.len < 8 {
 		if n := d.Read(bf); n == 0 {
 			return nil, nil
 		}
 	}
-	valueCnt := binary.LittleEndian.Uint16(d.buf[:2])
-	nameCnt := binary.LittleEndian.Uint16(d.buf[2:4])
+	valueCnt := binary.LittleEndian.Uint32(d.buf[:4])
+	nameCnt := binary.LittleEndian.Uint32(d.buf[4:8])
 
-	d.buf = d.buf[4:]
-	d.len -= 4
+	d.buf = d.buf[8:]
+	d.len -= 8
 
 	if d.len < nameCnt {
 		if n := d.Read(bf); n == 0 {
@@ -143,24 +143,24 @@ func (d *decoder) deSerializeSiriDB(bf *bufio.Reader) ([]string, [][]byte) {
 
 	key := make([]string, 0)
 	data := make([][]byte, 0)
-	for i := 0; uint16(i) < valueCnt; i++ {
-		if d.len < 4 {
+	for i := 0; uint32(i) < valueCnt; i++ {
+		if d.len < 8 {
 			if n := d.Read(bf); n == 0 {
 				return nil, nil
 			}
 		}
-		lengthKey := binary.LittleEndian.Uint16(d.buf[:2])
-		lengthData := binary.LittleEndian.Uint16(d.buf[2:4])
+		lengthKey := binary.LittleEndian.Uint32(d.buf[:4])
+		lengthData := binary.LittleEndian.Uint32(d.buf[4:8])
 
-		total := lengthData + lengthKey + 4
+		total := lengthData + lengthKey + 8
 		for d.len < total {
 			if n := d.Read(bf); n == 0 {
 				return nil, nil
 			}
 		}
 
-		key = append(key, string(name)+string(d.buf[4:lengthKey+4]))
-		data = append(data, d.buf[lengthKey+4:total])
+		key = append(key, string(name)+string(d.buf[8:lengthKey+8]))
+		data = append(data, d.buf[lengthKey+8:total])
 
 		d.buf = d.buf[total:]
 		d.len -= total
